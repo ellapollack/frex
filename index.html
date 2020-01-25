@@ -43,7 +43,7 @@
    }
 
    [contenteditable="plaintext-only"] {
-     margin: 0 0 1em 0;
+     margin: 0;
      font-size: 16px;
      background: #00ff000f;
      font-family: monospace;
@@ -95,7 +95,7 @@ ____________________________________
               oscillator waveform.
 ____________________________________
 
-           Learn more at:
+           Source code at:
    github.com/maxwellpollack/frex
 
 </pre>
@@ -164,7 +164,7 @@ p
     <pre class="label">ROOT NOTE</pre>
     <div style="display:inline-block;"><pre id="baseNote" class="single-line" spellcheck="false" contenteditable="plaintext-only">1</pre></div>
     <pre class="label">ROOT FREQ</pre>
-    <div style="display:inline-block;"><pre id="baseFreq" class="single-line" spellcheck="false" contenteditable="plaintext-only">64</pre></div>
+    <div style="display:inline-block;"><pre id="baseFreq" class="single-line" spellcheck="false" contenteditable="plaintext-only">32</pre></div>
     <pre class="label">SCALE</pre>
     <pre id="scale" class="numbered" spellcheck="false" contenteditable="plaintext-only">4/3
 (4/3)^2
@@ -283,7 +283,7 @@ Tone.context.latencyHint = "fastest";
  window.addEventListener('keyup', this.onkeyup);
 
  function onkeydown(e) {
-  if (e.key in keys && !e.repeat) {
+  if (e.key in keys && !e.repeat && !(e.shiftKey || e.ctrlKey || e.metaKey)) {
     let freq = Module.ccall('noteToFreq', 'number', ['number', 'number'], [keys[e.key], tuning]);
     voices[keys[e.key]-1].oscillator.partials = partials;
     voices[keys[e.key]-1].triggerAttack(freq, "+0", 0.5*minFreq/freq);
