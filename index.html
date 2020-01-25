@@ -27,7 +27,7 @@
    }
 
    #title>a {
-     font-size: 32px;
+     font-size: 2em;
      margin: 0.5em 1.5em 0.5em 1.5em;
      text-decoration: none;
    }
@@ -44,7 +44,6 @@
 
    [contenteditable="plaintext-only"] {
      margin: 0;
-     font-size: 16px;
      background: #00ff000f;
      font-family: monospace;
      padding: 0.5em;
@@ -295,7 +294,7 @@ Tone.context.latencyHint = "fastest";
 
 function changedKeymap() {
   let elm = document.getElementById('keymap');
-  let lines = keymap.innerHTML.split(/\r?\n/);
+  let lines = keymap.innerHTML.split(/\r?\n|<br>/);
 
   keys = {};
 
@@ -328,7 +327,7 @@ function changedKeymap() {
 function changedTuningString() {
 
   let elm = document.getElementById("scale");
-  let scale = elm.innerHTML;
+  let scale = elm.innerHTML.replace("<br>","\n");
   let baseNote = document.getElementById("baseNote").innerHTML;
   let baseFreq = document.getElementById("baseFreq").innerHTML;
 
@@ -345,12 +344,15 @@ function changedTuningString() {
 function changedPartials() {
 
   let elm = document.getElementById("partials");
-  let lines = elm.innerHTML.split(/\r?\n/);
+  let lines = elm.innerHTML.split(/\r?\n|<br>/);
+  console.log(elm.innerHTML);
+  console.log(lines);
 
   let arr = lines.map(
     (numstr) => Module.ccall('te_interp', 'number', ['string','number'], [numstr, 0])
   );
 
+console.log(arr);
   let i=0;
   if (arr.length>partials.length) {
     while (i<partials.length) {
