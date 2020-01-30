@@ -20,11 +20,16 @@
      color: #ffffff88;
    }
 
-   #title {
+   .vert {
      display:flex;
      justify-content: center;
      align-items:center;
    }
+
+    .horiz {
+      margin-left: 2em;
+      margin-right: 2em;
+    }
 
    #title>a {
      font-size: 2em;
@@ -37,13 +42,8 @@
      justify-content: center;
    }
 
-   .horiz {
-     margin-left: 2em;
-     margin-right: 2em;
-   }
-
    [contenteditable="plaintext-only"] {
-     margin: 0;
+     margin: 0 0 1em 0;
      background: #00ff000f;
      font-family: monospace;
      padding: 0.5em;
@@ -56,12 +56,12 @@
 
 <body>
 
-<div id="title">
+<div id="title" class="vert">
   <a href="index.html" style="color:blue;">&#8635;</a>
   <a onclick="window.location=getLink(); return false;" href="#" style="color:yellow;">&uarr;</a>
   <a href="https://github.com/sponsors/maxwellpollack" style="color:red;">&#10084;</a>
 </div>
-<div style="display:inline-block;">
+<div class="vert">
   <pre id="text" style="color:#0f0;" contenteditable="plaintext-only" spellcheck='false'>
 
   ███████╗██████╗ ███████╗██╗  ██╗
@@ -75,6 +75,12 @@
  a keyboard-controlled synthesizer
    with precise tuning and timbre
 ____________________________________
+
+       RATE : the number of steps
+              to play per second.
+
+   SEQUENCE : the key(s) to play
+              at each step.
 
     KEY MAP : the key(s) that
               trigger each note.
@@ -102,11 +108,7 @@ ____________________________________
 <div id="inputsContainer">
   <div class="horiz">
     <pre class="label">KEY MAP</pre>
-    <pre id="keymap" class="numbered" spellcheck="false" contenteditable="plaintext-only">
-
-
-
-`
+    <pre id="keymap" class="numbered" spellcheck="false" contenteditable="plaintext-only">`
 z
 a
 q
@@ -160,10 +162,35 @@ p
 \</pre>
   </div>
   <div class="horiz">
-    <pre class="label">ROOT NOTE</pre>
-    <div style="display:inline-block;"><pre id="baseNote" class="single-line" spellcheck="false" contenteditable="plaintext-only">1</pre></div>
-    <pre class="label">ROOT FREQ</pre>
-    <div style="display:inline-block;"><pre id="baseFreq" class="single-line" spellcheck="false" contenteditable="plaintext-only">32</pre></div>
+    <pre class="label">RATE</pre>
+    <div class="vert">
+      <pre id="rate" class="single-line" spellcheck="false" contenteditable="plaintext-only">3</pre>
+    </div>
+    <pre class="label">SEQUENCE</pre>
+    <pre id="sequence" class="numbered" spellcheck="false" contenteditable="plaintext-only">zxcv
+xsdf
+xer
+sdfg
+sdfg
+srt
+erty
+efgh
+ety
+4567
+4ghj
+4yu
+erty
+ehjk
+eui
+dfh
+djk
+dio</pre>
+  </div>
+  <div class="horiz">
+    <pre class="label">BASE NOTE</pre>
+    <div class="vert"><pre id="baseNote" class="single-line" spellcheck="false" contenteditable="plaintext-only">2</pre></div>
+    <pre class="label">BASE FREQ</pre>
+    <div class="vert"><pre id="baseFreq" class="single-line" spellcheck="false" contenteditable="plaintext-only">64</pre></div>
     <pre class="label">SCALE</pre>
     <pre id="scale" class="numbered" spellcheck="false" contenteditable="plaintext-only">4/3
 (4/3)^2
@@ -174,97 +201,33 @@ p
     <pre class="label">PARTIALS</pre>
     <pre id="partials" class="numbered" spellcheck="false" contenteditable="plaintext-only">1
 1/2
-1/3
-1/4
-
-
-
-1/8
-1/9
-
-
-
-
-
-
-1/16
-
-
-
-
-
-
-
-
-
-
-1/27
-
-
-
-
-1/32
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-1/64
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-1/81</pre>
+1/3</pre>
 </div>
 </div>
 
 <script>
 
-Tone.context.latencyHint = "fastest";
+  //Tone.context.latencyHint = "fastest";
+  Tone.Transport.PPQ = 1;
+  Tone.Transport.loopEnd = "4n";
+  Tone.Transport.loop = true;
 
  var tuning = null;
  var keys = {};
  var partials = [1];
  var minFreq = 256;
  var voices = [];
+ var sequence = [];
+ var step=0;
+ var inc=1;
+
+ document.getElementById('keymap').oninput = changedKeymap;
+ document.getElementById('partials').oninput = changedPartials;
+ document.getElementById('scale').oninput = changedTuningString;
+ document.getElementById('baseNote').oninput = changedTuningString;
+ document.getElementById('baseFreq').oninput = changedTuningString;
+ document.getElementById('sequence').oninput = changedSequence;
+ document.getElementById('rate').oninput = changedRate;
 
  let sl = document.getElementsByClassName('single-line');
  for (el of sl) {
@@ -278,6 +241,30 @@ Tone.context.latencyHint = "fastest";
   });
  }
 
+  function htmlToString(html) {
+    return html.replace("<br>","\n").replace(/\n$/,"");
+  }
+
+  function stepSequence(time) {
+    let lastStep = step;
+    step = (step+inc+sequence.length) % sequence.length;
+
+    Tone.Draw.schedule(function(){
+      document.querySelector('#sequence').parentNode.firstChild.childNodes[lastStep].style.color = "";
+      document.querySelector('#sequence').parentNode.firstChild.childNodes[step].style.color = "white";
+	  }, time);
+
+    notes = sequence[step];
+    for (let i=0; i<notes.length; i++) {
+      let note = notes[i];
+      if (note in keys) {
+        let freq = Module.ccall('noteToFreq', 'number', ['number', 'number'], [keys[note], tuning]);
+        voices[keys[note]-1].oscillator.partials = partials;
+        voices[keys[note]-1].triggerAttackRelease(freq, "4n", time, 0.3*minFreq/freq);
+      }
+    }
+  }
+
  window.addEventListener('keydown', this.onkeydown);
  window.addEventListener('keyup', this.onkeyup);
 
@@ -285,16 +272,37 @@ Tone.context.latencyHint = "fastest";
   if (e.key in keys && !e.repeat && !(e.shiftKey || e.ctrlKey || e.metaKey)) {
     let freq = Module.ccall('noteToFreq', 'number', ['number', 'number'], [keys[e.key], tuning]);
     voices[keys[e.key]-1].oscillator.partials = partials;
-    voices[keys[e.key]-1].triggerAttack(freq, "+0", 0.5*minFreq/freq);
+    voices[keys[e.key]-1].triggerAttack(freq, "+0", 0.3*minFreq/freq);
   }
  }
+
  function onkeyup(e) {
    if (e.key in keys) { voices[keys[e.key]-1].triggerRelease(); }
  }
 
+ function changedRate() {
+   let expr = document.getElementById('rate').innerHTML;
+   let val = Module.ccall('te_interp', 'number', ['string','number'], [expr, 0]);
+   if (!isNaN(val)) {
+     if (val==0) {
+       Tone.Transport.stop();
+     } else {
+       Tone.Transport.bpm.value = Math.abs(val)*60;
+       inc = val>0 ? 1 : -1;
+       Tone.Transport.start();
+    }
+  }
+ }
+
+ function changedSequence() {
+   let elm = document.getElementById('sequence');
+   sequence = htmlToString(elm.innerHTML).split(/\r?\n/);
+   updateNumbers(elm);
+ }
+
 function changedKeymap() {
   let elm = document.getElementById('keymap');
-  let lines = keymap.innerHTML.split(/\r?\n|<br>/);
+  let lines = htmlToString(keymap.innerHTML).split(/\r?\n/);
 
   keys = {};
 
@@ -310,7 +318,7 @@ function changedKeymap() {
     while (i<lines.length) {
       voices.push(new Tone.Synth({
         oscillator : {partials : partials} ,
-        envelope : {attack : 0.05 , decay : 10 , sustain : 1 , release : 0.05}
+        envelope : {attack : 0.01 , decay : 10 , sustain : 1 , release : 0.01}
         }).toMaster());
       i++;
     }
@@ -321,13 +329,19 @@ function changedKeymap() {
       voices.pop();
     }
   }
+
+  minFreq = Infinity;
+  for (let note of Object.values(keys)) {
+    minFreq = Math.min(minFreq, Math.abs(Module.ccall('noteToFreq', 'number', ['number', 'number'], [note, tuning])));
+  }
+
   updateNumbers(elm);
 }
 
 function changedTuningString() {
 
   let elm = document.getElementById("scale");
-  let scale = elm.innerHTML.replace("<br>","\n");
+  let scale = htmlToString(elm.innerHTML);
   let baseNote = document.getElementById("baseNote").innerHTML;
   let baseFreq = document.getElementById("baseFreq").innerHTML;
 
@@ -335,7 +349,10 @@ function changedTuningString() {
   if (tmp != 0) {
     Module.ccall('free', 'void', ['number'], [tuning]);
     tuning = tmp;
-    minFreq = Module.ccall('noteToFreq', 'number', ['number', 'number'], [1, tuning]);
+    minFreq = Infinity;
+    for (let note of Object.values(keys)) {
+      minFreq = Math.min(minFreq, Math.abs(Module.ccall('noteToFreq', 'number', ['number', 'number'], [note, tuning])));
+    }
   }
 
   updateNumbers(elm);
@@ -344,15 +361,12 @@ function changedTuningString() {
 function changedPartials() {
 
   let elm = document.getElementById("partials");
-  let lines = elm.innerHTML.split(/\r?\n|<br>/);
-  console.log(elm.innerHTML);
-  console.log(lines);
+  let lines = htmlToString(elm.innerHTML).split(/\r?\n/);
 
   let arr = lines.map(
     (numstr) => Module.ccall('te_interp', 'number', ['string','number'], [numstr, 0])
   );
 
-console.log(arr);
   let i=0;
   if (arr.length>partials.length) {
     while (i<partials.length) {
@@ -387,28 +401,27 @@ Module.onRuntimeInitialized = () => {
     initNumbers(numbered[i]);
   }
 
-  document.getElementById('keymap').oninput = changedKeymap;
-  document.getElementById('partials').oninput = changedPartials;
-  document.getElementById('scale').oninput = changedTuningString;
-  document.getElementById('baseNote').oninput = changedTuningString;
-  document.getElementById('baseFreq').oninput = changedTuningString;
-
   let p = new URLSearchParams(document.location.search.substring(1));
   p = p.get('p');
   if (p!=null) {
+    let params = JSON.parse(JSONUncrush(p));
 
-  let params = JSON.parse(JSONUncrush(p));
-
-  document.getElementById("text").innerHTML = params.t;
-  document.getElementById("partials").innerHTML = params.p;
-  document.getElementById("scale").innerHTML = params.s;
-  document.getElementById("baseNote").innerHTML = params.n;
-  document.getElementById("baseFreq").innerHTML = params.f;
-  document.getElementById("keymap").innerHTML = params.k;
+    document.getElementById("text").innerHTML = params.t;
+    document.getElementById("partials").innerHTML = params.p;
+    document.getElementById("scale").innerHTML = params.s;
+    document.getElementById("baseNote").innerHTML = params.n;
+    document.getElementById("baseFreq").innerHTML = params.f;
+    document.getElementById("keymap").innerHTML = params.k;
+    document.getElementById("rate").innerHTML = params.r;
+    document.getElementById("sequence").innerHTML = params.q;
   }
+  changedTuningString();
   changedKeymap();
   changedPartials();
-  changedTuningString();
+  changedSequence();
+  changedRate();
+
+  Tone.Transport.scheduleRepeat(stepSequence, "4n");
 }
 
 function getLink() {
@@ -418,7 +431,9 @@ function getLink() {
      'n': document.getElementById('baseNote').innerHTML,
      'f': document.getElementById('baseFreq').innerHTML,
      's': document.getElementById('scale').innerHTML,
-     'p': document.getElementById('partials').innerHTML}
+     'p': document.getElementById('partials').innerHTML,
+     'r': document.getElementById('rate').innerHTML,
+     'q': document.getElementById('sequence').innerHTML}
   ));
 }
 
@@ -443,11 +458,11 @@ function initNumbers(numbered) {
 function updateNumbers(numbered) {
   let numbers = numbered.parentNode.firstChild;
 
-  numbers.innerHTML = "1";
+  numbers.innerHTML = '<div class="l1">1</div>';
   let line = 2;
   while (numbers.clientHeight < numbered.clientHeight)
   {
-    numbers.insertAdjacentHTML("beforeend", "<br>"+line);
+    numbers.insertAdjacentHTML("beforeend", '<div class="l'+line+'">'+line+"</div>");
     line++;
   }
 
