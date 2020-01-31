@@ -89,7 +89,7 @@ ____________________________________
               each note number.
 
        RATE : the number of steps
-              to play per second.
+              per second.
 
    SEQUENCE : the key(s) to play
               at each step.
@@ -217,18 +217,21 @@ zfgy</pre>
 -->
 <script>
 
-  //Tone.context.latencyHint = "fastest";
+  Tone.context.latencyHint = "fastest";
   Tone.Transport.PPQ = 1;
   Tone.Transport.loopEnd = "4n";
   Tone.Transport.loop = true;
 
  var tuning = null;
  var keys = {};
+ var pressedKeys = new Set();
+ var playing = new Set();
  var partials = [1];
  var voices = [];
  var sequence = [];
  var step=0;
  var inc=1;
+ var whiteNumber = null;
 
  document.getElementById('keymap').oninput = changedKeymap;
  document.getElementById('partials').oninput = changedPartials;
@@ -255,38 +258,56 @@ zfgy</pre>
   }
 
   function stepSequence(time) {
-    let lastStep = step;
+
     step = (step+inc+sequence.length) % sequence.length;
 
-    Tone.Draw.schedule(function(){
-      document.querySelector('#sequence').parentNode.firstChild.childNodes[lastStep].style.color = "";
-      document.querySelector('#sequence').parentNode.firstChild.childNodes[step].style.color = "white";
-	  }, time);
-
-    notes = sequence[step];
-    for (let i=0; i<notes.length; i++) {
-      let note = notes[i];
-      if (note in keys) {
-        let freq = Module.ccall('noteToFreq', 'number', ['number', 'number'], [keys[note], tuning]);
-        voices[keys[note]-1].oscillator.partials = partials;
-        voices[keys[note]-1].triggerAttackRelease(freq, "4n", time, Math.min(0.5,10/freq));
+    for (key of playing) {
+      if (!(pressedKeys.has(key) || sequence[step].includes(key))) {
+        voices[keys[key]-1].triggerRelease(time);
+        playing.delete(key);
       }
     }
+
+    for (let i=0; i<sequence[step].length; i++) {
+      let key = sequence[step][i];
+      if (key in keys && !playing.has(key)) {
+        playing.add(key);
+        let freq = Module.ccall('noteToFreq', 'number', ['number', 'number'], [keys[key], tuning]);
+        voices[keys[key]-1].oscillator.partials = partials;
+        voices[keys[key]-1].triggerAttack(freq, time, Math.min(0.5,10/freq));
+      }
+    }
+
+    Tone.Draw.schedule(function(){
+      whiteNumber.style.color = "";
+      whiteNumber = document.querySelector('#sequence').parentNode.firstChild.childNodes[step];
+      whiteNumber.style.color = "white";
+	  }, time);
   }
 
  window.addEventListener('keydown', this.onkeydown);
  window.addEventListener('keyup', this.onkeyup);
 
  function onkeydown(e) {
-  if (e.key in keys && !e.repeat && !(e.shiftKey || e.ctrlKey || e.metaKey)) {
-    let freq = Module.ccall('noteToFreq', 'number', ['number', 'number'], [keys[e.key], tuning]);
-    voices[keys[e.key]-1].oscillator.partials = partials;
-    voices[keys[e.key]-1].triggerAttack(freq, "+0", Math.min(0.5,10/freq));
+  if (!(e.repeat || e.shiftKey || e.ctrlKey || e.metaKey)) {
+    pressedKeys.add(e.key);
+    if (e.key in keys && !playing.has(e.key)) {
+      playing.add(e.key);
+      let freq = Module.ccall('noteToFreq', 'number', ['number', 'number'], [keys[e.key], tuning]);
+      voices[keys[e.key]-1].oscillator.partials = partials;
+      voices[keys[e.key]-1].triggerAttack(freq, "+0", Math.min(0.5,10/freq));
+    }
   }
  }
 
  function onkeyup(e) {
-   if (e.key in keys) { voices[keys[e.key]-1].triggerRelease(); }
+   if (!(e.repeat || e.shiftKey || e.ctrlKey || e.metaKey)) {
+     pressedKeys.delete(e.key);
+     if (e.key in keys && !sequence[step].includes(e.key)) {
+       playing.delete(e.key);
+       voices[keys[e.key]-1].triggerRelease();
+     }
+   }
  }
 
  function changedRate() {
@@ -295,6 +316,10 @@ zfgy</pre>
    if (!isNaN(val)) {
      if (val==0) {
        Tone.Transport.stop();
+       for (key of playing) {
+         playing.delete(key);
+         voices[keys[key]-1].triggerRelease();
+       }
      } else {
        Tone.Transport.bpm.value = Math.abs(val)*60;
        inc = val>0 ? 1 : -1;
@@ -420,6 +445,8 @@ Module.onRuntimeInitialized = () => {
   changedPartials();
   changedSequence();
   changedRate();
+
+  whiteNumber = document.querySelector('#sequence').parentNode.firstChild.childNodes[step];
 
   Tone.Transport.scheduleRepeat(stepSequence, "4n");
 }
