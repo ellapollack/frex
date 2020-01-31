@@ -281,7 +281,7 @@ zfgy</pre>
     Tone.Draw.schedule(function(){
       if (whiteNumber) whiteNumber.style.color = "";
       whiteNumber = document.querySelector('#sequence').parentNode.firstChild.childNodes[step];
-      whiteNumber.style.color = "white";
+      if (whiteNumber) whiteNumber.style.color = "white";
 	  }, time);
   }
 
@@ -440,6 +440,7 @@ Module.onRuntimeInitialized = () => {
     document.getElementById("rate").innerHTML = params.r;
     document.getElementById("sequence").innerHTML = params.q;
   }
+
   changedTuningString();
   changedKeymap();
   changedPartials();
