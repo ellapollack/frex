@@ -55,6 +55,13 @@
 </head>
 
 <body>
+  <!--
+  ██████   ██████  ██████  ██    ██
+  ██   ██ ██    ██ ██   ██  ██  ██
+  ██████  ██    ██ ██   ██   ████
+  ██   ██ ██    ██ ██   ██    ██
+  ██████   ██████  ██████     ██
+  -->
 
 <div id="title" class="vert">
   <a href="index.html" style="color:blue;">&#8635;</a>
@@ -62,7 +69,7 @@
   <a href="https://github.com/sponsors/maxwellpollack" style="color:red;">&#10084;</a>
 </div>
 <div class="vert">
-  <pre id="text" style="color:#0f0;" contenteditable="plaintext-only" spellcheck='false'>
+  <pre id="text" style="color:#0f0;" contenteditable="plaintext-only" spellcheck='false'>   RESET        SAVE       SUPPORT
 
   ███████╗██████╗ ███████╗██╗  ██╗
   ██╔════╝██╔══██╗██╔════╝╚██╗██╔╝
@@ -76,14 +83,14 @@
    with precise tuning and timbre
 ____________________________________
 
+    KEY MAP : the key(s) that
+              trigger each note.
+
        RATE : the number of steps
               to play per second.
 
    SEQUENCE : the key(s) to play
               at each step.
-
-    KEY MAP : the key(s) that
-              trigger each note.
 
   ROOT NOTE : the note at which
               the SCALE begins.
@@ -167,24 +174,22 @@ p
       <pre id="rate" class="single-line" spellcheck="false" contenteditable="plaintext-only">3</pre>
     </div>
     <pre class="label">SEQUENCE</pre>
-    <pre id="sequence" class="numbered" spellcheck="false" contenteditable="plaintext-only">zxcv
-xsdf
-xer
-sdfg
+    <pre id="sequence" class="numbered" spellcheck="false" contenteditable="plaintext-only">zsdf
+zerf
+sdf5
 sdfg
 srt
-erty
-efgh
-ety
-4567
+rtyh
+xcft
+dfry
+456u
 4ghj
-4yu
-erty
-ehjk
-eui
-dfh
-djk
-dio</pre>
+4y
+ry5
+hj4
+dbg5
+xfgh
+zfgy</pre>
   </div>
   <div class="horiz">
     <pre class="label">BASE NOTE</pre>
@@ -205,6 +210,13 @@ dio</pre>
 </div>
 </div>
 
+<!--
+███████  ██████ ██████  ██ ██████  ████████
+██      ██      ██   ██ ██ ██   ██    ██
+███████ ██      ██████  ██ ██████     ██
+     ██ ██      ██   ██ ██ ██         ██
+███████  ██████ ██   ██ ██ ██         ██
+-->
 <script>
 
   //Tone.context.latencyHint = "fastest";
@@ -215,7 +227,6 @@ dio</pre>
  var tuning = null;
  var keys = {};
  var partials = [1];
- var minFreq = 256;
  var voices = [];
  var sequence = [];
  var step=0;
@@ -260,7 +271,7 @@ dio</pre>
       if (note in keys) {
         let freq = Module.ccall('noteToFreq', 'number', ['number', 'number'], [keys[note], tuning]);
         voices[keys[note]-1].oscillator.partials = partials;
-        voices[keys[note]-1].triggerAttackRelease(freq, "4n", time, 0.3*minFreq/freq);
+        voices[keys[note]-1].triggerAttackRelease(freq, "4n", time, Math.min(0.5,10/freq));
       }
     }
   }
@@ -272,7 +283,7 @@ dio</pre>
   if (e.key in keys && !e.repeat && !(e.shiftKey || e.ctrlKey || e.metaKey)) {
     let freq = Module.ccall('noteToFreq', 'number', ['number', 'number'], [keys[e.key], tuning]);
     voices[keys[e.key]-1].oscillator.partials = partials;
-    voices[keys[e.key]-1].triggerAttack(freq, "+0", 0.3*minFreq/freq);
+    voices[keys[e.key]-1].triggerAttack(freq, "+0", Math.min(0.5,10/freq));
   }
  }
 
@@ -319,7 +330,7 @@ function changedKeymap() {
       voices.push(new Tone.Synth({
         oscillator : {partials : partials} ,
         envelope : {attack : 0.01 , decay : 10 , sustain : 1 , release : 0.01}
-        }).toMaster());
+      }).toMaster());
       i++;
     }
   } else {
@@ -328,11 +339,6 @@ function changedKeymap() {
       voices[i].dispose();
       voices.pop();
     }
-  }
-
-  minFreq = Infinity;
-  for (let note of Object.values(keys)) {
-    minFreq = Math.min(minFreq, Math.abs(Module.ccall('noteToFreq', 'number', ['number', 'number'], [note, tuning])));
   }
 
   updateNumbers(elm);
@@ -349,10 +355,6 @@ function changedTuningString() {
   if (tmp != 0) {
     Module.ccall('free', 'void', ['number'], [tuning]);
     tuning = tmp;
-    minFreq = Infinity;
-    for (let note of Object.values(keys)) {
-      minFreq = Math.min(minFreq, Math.abs(Module.ccall('noteToFreq', 'number', ['number', 'number'], [note, tuning])));
-    }
   }
 
   updateNumbers(elm);
