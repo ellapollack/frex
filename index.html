@@ -6,7 +6,6 @@
   <title>FREX</title>
   <script src="tone.js"></script>
   <script src="scalemap.js"></script>
-  <script src="jsoncrush.js"></script>
   <style>
 
     body {
@@ -31,9 +30,16 @@
       margin-right: 2em;
     }
 
+    #title {
+      display: flex;
+    }
+
     #title>a {
+      flex: 1;
+      width: 2em;
+      display: block;
       font-size: 2em;
-      margin: 0.5em 1.5em 0.5em 1.5em;
+      padding: 0.5em;
       text-decoration: none;
     }
 
@@ -55,14 +61,13 @@
 </head>
 
 <body>
-
-  <div id="title" class="vert">
-    <a href="index.html" style="color:blue;">&#8635;</a>
-    <a onclick="window.location=getLink(); return false;" href="#" style="color:yellow;">&uarr;</a>
-    <a href="https://github.com/sponsors/maxwellpollack" style="color:red;">&#10084;</a>
-  </div>
-  <div class="vert">
-    <pre id="text" style="color:#0f0;" contenteditable="plaintext-only" spellcheck='false'>   RESET        SAVE       SUPPORT
+  <div style="display: inline-block;">
+    <div id="title" class="vert">
+      <a href="https://maxis.cool/frex" style="color:blue;">&#8635;<div style="font-size:0.5em;">RESET</div></a>
+      <a href="https://github.com/maxwellpollack/frex" style="color:yellow;">/<div style="font-size:0.5em;">CODE</div></a>
+      <a href="https://github.com/sponsors/maxwellpollack" style="color:red;">&#10084;<div style="font-size:0.5em;">SUPPORT</div></a>
+    </div>
+    <pre id="text" style="color:#0f0;" contenteditable="plaintext-only" spellcheck='false'>
 
   ███████╗██████╗ ███████╗██╗  ██╗
   ██╔════╝██╔══██╗██╔════╝╚██╗██╔╝
@@ -70,40 +75,68 @@
   ██╔══╝  ██╔══██╗██╔══╝   ██╔██╗
   ██║     ██║  ██║███████╗██╔╝ ██╗
   ╚═╝     ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝
-           EQUENCY          PLORER
+          equency         plorer
 
- a keyboard-controlled synthesizer
-   with precise tuning and timbre
+               a precisely-tunable
+               keyboard-controlled
+                    software organ
+ _________________________________ 
 
-   github.com/maxwellpollack/frex
-____________________________________
+ COPY THE URL TO SHARE YOUR PATCH!
+ _________________________________
 
-    KEY MAP : the key(s) that play
-              each note number.
+      RATE: the number of steps
+            to play per second
 
-       RATE : the number of steps
-              per second.
+  SEQUENCE: the key(s) to play at
+            each step
 
-   SEQUENCE : the key(s) to play
-              at each step.
+   KEY MAP: the key(s) to map to
+            each integer note
 
-  ROOT NOTE : the note number of
-              SCALE degree 0.
+ BASE NOTE: the integer note of
+            SCALE degree 0
 
-  ROOT FREQ : the frequency of
-              ROOT NOTE, in Hz.
+ BASE FREQ: the frequency of
+            SCALE degree 0
+            (cycles per second)
 
-      SCALE : the interval of each
-              SCALE degree, ending
-              in the octave.
+     SCALE: the frequency interval
+            of each SCALE degree
+            (the last of which is
+            the octave)
 
-   PARTIALS : the amplitude of each
-              harmonic in the
-              oscillator waveform.
+  PARTIALS: the amplitude of
+            each integer multiple
+            of the fundamental
+            frequency
 
 </pre>
   </div>
   <div id="inputsContainer">
+    <div class="horiz">
+      <pre class="label">RATE</pre>
+      <div class="vert">
+        <pre id="rate" class="single-line" spellcheck="false" contenteditable="plaintext-only">4</pre>
+      </div>
+      <pre class="label">SEQUENCE</pre>
+      <pre id="sequence" class="numbered" spellcheck="false" contenteditable="plaintext-only">zsdf
+zerf
+sdf5
+sdfg
+srt
+xcyh
+rft
+dfry
+456y
+ghj
+fyn
+ry5
+hj4
+dbg5
+xfgh
+zfgy</pre>
+    </div>
     <div class="horiz">
       <pre class="label">KEY MAP</pre>
       <pre id="keymap" class="numbered" spellcheck="false" contenteditable="plaintext-only">`
@@ -160,33 +193,10 @@ p
 \</pre>
     </div>
     <div class="horiz">
-      <pre class="label">RATE</pre>
-      <div class="vert">
-        <pre id="rate" class="single-line" spellcheck="false" contenteditable="plaintext-only">0</pre>
-      </div>
-      <pre class="label">SEQUENCE</pre>
-      <pre id="sequence" class="numbered" spellcheck="false" contenteditable="plaintext-only">zsdf
-zerf
-sdf5
-sdfg
-srt
-xcyh
-rft
-dfry
-456y
-ghj
-fyn
-ry5
-hj4
-dbg5
-xfgh
-zfgy</pre>
-    </div>
-    <div class="horiz">
       <pre class="label">BASE NOTE</pre>
       <div class="vert"><pre id="baseNote" class="single-line" spellcheck="false" contenteditable="plaintext-only">2</pre></div>
       <pre class="label">BASE FREQ</pre>
-      <div class="vert"><pre id="baseFreq" class="single-line" spellcheck="false" contenteditable="plaintext-only">100</pre></div>
+      <div class="vert"><pre id="baseFreq" class="single-line" spellcheck="false" contenteditable="plaintext-only">64</pre></div>
       <pre class="label">SCALE</pre>
       <pre id="scale" class="numbered" spellcheck="false" contenteditable="plaintext-only">4/3
 (4/3)^2
@@ -197,7 +207,13 @@ zfgy</pre>
       <pre class="label">PARTIALS</pre>
       <pre id="partials" class="numbered" spellcheck="false" contenteditable="plaintext-only">1
 1/2
-1/3</pre>
+1/3
+1/4
+
+1/6
+
+
+1/9</pre>
     </div>
   </div>
 
@@ -218,6 +234,14 @@ zfgy</pre>
     var step=0;
     var inc=1;
     var whiteNumber = null;
+    const fields = {t:'text',
+                    k:'keymap',
+                    p:'partials',
+                    s:'scale',
+                    r:'rate',
+                    q:'sequence',
+                    n:'baseNote',
+                    f:'baseFreq'};
 
     document.getElementById('keymap').oninput = changedKeymap;
     document.getElementById('partials').oninput = changedPartials;
@@ -227,9 +251,12 @@ zfgy</pre>
     document.getElementById('sequence').oninput = changedSequence;
     document.getElementById('rate').oninput = changedRate;
 
-    let sl = document.getElementsByClassName('single-line');
+    for (el of document.querySelectorAll('[contenteditable="plaintext-only"]'))
+    {
+      el.onblur = () => { window.history.replaceState({},"", getLink()); };
+    }
 
-    for (el of sl) {
+    for (el of document.getElementsByClassName('single-line')) {
       el.addEventListener('keydown', (e) => {
         if (e.keyCode == 13) {e.preventDefault();}
       });
@@ -247,19 +274,21 @@ zfgy</pre>
     function stepSequence(time) {
 
       for (key of playing) {
-        if (!(pressedKeys.has(key) || sequence[step].includes(key))) {
+        if (!(pressedKeys.has(key) || (sequence.length > step && sequence[step].includes(key)))) {
           playing.delete(key);
           if (key in keys) voices[keys[key]-1].triggerRelease(time);
         }
       }
 
-      for (let i=0; i<sequence[step].length; i++) {
-        let key = sequence[step][i];
-        if (key in keys && !playing.has(key)) {
-          playing.add(key);
-          let freq = Module.ccall('noteToFreq', 'number', ['number', 'number'], [keys[key], tuning]);
-          voices[keys[key]-1].oscillator.partials = partials;
-          voices[keys[key]-1].triggerAttack(freq, time, Math.min(0.5,10/freq));
+      if (sequence.length>step) {
+        for (let i=0; i<sequence[step].length; i++) {
+          let key = sequence[step][i];
+          if (key in keys && !playing.has(key)) {
+            playing.add(key);
+            let freq = Module.ccall('noteToFreq', 'number', ['number', 'number'], [keys[key], tuning]);
+            voices[keys[key]-1].oscillator.partials = partials;
+            voices[keys[key]-1].triggerAttack(freq, time, Math.min(0.5,10/freq));
+          }
         }
       }
 
@@ -289,12 +318,11 @@ zfgy</pre>
     }
 
     function onkeyup(e) {
-      if (!(e.repeat || e.shiftKey || e.ctrlKey || e.metaKey)) {
-        pressedKeys.delete(e.key);
-        if (e.key in keys && (!sequence[step].includes(e.key) || Tone.Transport.state == "stopped")) {
-          playing.delete(e.key);
-          voices[keys[e.key]-1].triggerRelease();
-        }
+      pressedKeys.delete(e.key);
+      //sequence[step] = "undefined"
+      if (e.key in keys && sequence.length > step && (!sequence[step].includes(e.key) || Tone.Transport.state == "stopped")) {
+        playing.delete(e.key);
+        voices[keys[e.key]-1].triggerRelease();
       }
     }
 
@@ -310,7 +338,7 @@ zfgy</pre>
         if (val==0) {
           step=0;
           if (whiteNumber) whiteNumber.style.color = "";
-          whiteNumber =  document.querySelector('#sequence').parentNode.firstChild.childNodes[0];
+          whiteNumber =  document.getElementById('sequence').parentNode.firstChild.childNodes[0];
           if (whiteNumber) whiteNumber.style.color = "white";
         }
       } else {
@@ -419,18 +447,12 @@ zfgy</pre>
         initNumbers(numbered[i]);
       }
 
-      let p = new URLSearchParams(document.location.search.substring(1));
-      p = p.get('p');
-      if (p!=null) {
-        let params = JSON.parse(JSONUncrush(p));
+      let query = new URLSearchParams(document.location.search.replace(/^\?|\/$/g,""));
 
-        document.getElementById("text").innerHTML = params.t;
-        document.getElementById("partials").innerHTML = params.p;
-        document.getElementById("scale").innerHTML = params.s;
-        document.getElementById("baseNote").innerHTML = params.n;
-        document.getElementById("baseFreq").innerHTML = params.f;
-        document.getElementById("keymap").innerHTML = params.k;
-        document.getElementById("sequence").innerHTML = params.q;
+      for ([key,value] of query) {
+        if (key in fields) {
+          document.getElementById(fields[key]).innerHTML = decodeURIComponent(value);
+        }
       }
 
       changedTuningString();
@@ -446,15 +468,11 @@ zfgy</pre>
     }
 
     function getLink() {
-      return '?p=' + JSONCrush(JSON.stringify(
-        {'t': document.getElementById('text').innerHTML,
-         'k': document.getElementById('keymap').innerHTML,
-         'n': document.getElementById('baseNote').innerHTML,
-         'f': document.getElementById('baseFreq').innerHTML,
-         's': document.getElementById('scale').innerHTML,
-         'p': document.getElementById('partials').innerHTML,
-         'q': document.getElementById('sequence').innerHTML}
-      ));
+      let str = "";
+      for (const [key,value] of Object.entries(fields)) {
+        str += "&" + key + "=" + encodeURIComponent(document.getElementById(value).innerHTML);
+      }
+      return str.replace(/^\&/,"?");
     }
 
     function initNumbers(numbered) {
