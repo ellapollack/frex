@@ -57,17 +57,54 @@
       border: 1px solid white;
       text-align: left;
     }
+
+    #splash {
+      background-color: black;
+      background-image:url('stars.png');
+      background-attachment: fixed;
+      background-repeat: repeat;
+      position:fixed;
+      top:0;
+      bottom:0;
+      left:0;
+      right:0;
+      height:100%;
+      width:100%;
+      z-index: 100;
+      display: flex;
+      justify-content: center;
+      align-items:center;
+      color: #fff;
+    }
+
+    .btn {
+      padding: 1em 0 1em 0;
+      margin: 0.5em 0 0.5em 0;
+      width: 100%;
+      height: 1em;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+    }
   </style>
 </head>
 
 <body>
+  <div id="splash">
+    <div>Select a latency setting:
+    <div class="btn" style="background-color:#f00;" onclick="startWithLatency('playback')">Fewest glitches</div>
+    <div class="btn" style="background-color:#ff0;" onclick="startWithLatency('balanced')">Few glitches</div>
+    <div class="btn" style="background-color:#0f0;" onclick="startWithLatency('interactive')">Low latency</div>
+    <div class="btn" style="background-color:#00f;" onclick="startWithLatency('fastest')">Lowest latency</div>
+  </div>
+  </div>
   <div style="display: inline-block;">
     <div id="title" class="vert">
       <a href="https://maxis.cool/frex" style="color:blue;">&#8635;<div style="font-size:0.5em;">RESET</div></a>
       <a href="https://github.com/maxwellpollack/frex" style="color:yellow;">/<div style="font-size:0.5em;">CODE</div></a>
       <a href="https://github.com/sponsors/maxwellpollack" style="color:red;">&#10084;<div style="font-size:0.5em;">SUPPORT</div></a>
     </div>
-    <pre id="text" style="color:#0f0;" contenteditable="plaintext-only" spellcheck='false'>
+    <pre id="text" contenteditable="plaintext-only" spellcheck='false'>
 
   ███████╗██████╗ ███████╗██╗  ██╗
   ██╔════╝██╔══██╗██╔════╝╚██╗██╔╝
@@ -219,11 +256,6 @@ p
 
   <script>
 
-    //Tone.context.latencyHint = "fastest";
-    Tone.Transport.PPQ = 1;
-    Tone.Transport.loopEnd = "4n";
-    Tone.Transport.loop = true;
-
     var tuning = null;
     var keys = {};
     var pressedKeys = new Set();
@@ -250,6 +282,12 @@ p
     document.getElementById('baseFreq').oninput = changedTuningString;
     document.getElementById('sequence').oninput = changedSequence;
     document.getElementById('rate').oninput = changedRate;
+
+    function startWithLatency(latency) {
+      Tone.context.latencyHint = latency;
+      document.getElementById("splash").style.display = "none";
+      Tone.context.resume();
+    }
 
     for (el of document.querySelectorAll('[contenteditable="plaintext-only"]'))
     {
@@ -284,10 +322,12 @@ p
         for (let i=0; i<sequence[step].length; i++) {
           let key = sequence[step][i];
           if (key in keys && !playing.has(key)) {
-            playing.add(key);
             let freq = Module.ccall('noteToFreq', 'number', ['number', 'number'], [keys[key], tuning]);
-            voices[keys[key]-1].oscillator.partials = partials;
-            voices[keys[key]-1].triggerAttack(freq, time, Math.min(0.5,10/freq));
+            if (freq!=0) {
+              playing.add(key);
+              voices[keys[key]-1].oscillator.partials = partials;
+              voices[keys[key]-1].triggerAttack(freq, time, Math.min(0.5,10/freq));
+            }
           }
         }
       }
@@ -309,10 +349,12 @@ p
       if (!(e.repeat || e.shiftKey || e.ctrlKey || e.metaKey)) {
         pressedKeys.add(e.key);
         if (e.key in keys && !playing.has(e.key)) {
-          playing.add(e.key);
           let freq = Module.ccall('noteToFreq', 'number', ['number', 'number'], [keys[e.key], tuning]);
-          voices[keys[e.key]-1].oscillator.partials = partials;
-          voices[keys[e.key]-1].triggerAttack(freq, "+0", Math.min(0.5,10/freq));
+          if (freq!=0) {
+            playing.add(e.key);
+            voices[keys[e.key]-1].oscillator.partials = partials;
+            voices[keys[e.key]-1].triggerAttack(freq, "+0", Math.min(0.5,10/freq));
+          }
         }
       }
     }
@@ -442,6 +484,9 @@ p
     }
 
     Module.onRuntimeInitialized = () => {
+      Tone.Transport.PPQ = 1;
+      Tone.Transport.loopEnd = "4n";
+      Tone.Transport.loop = true;
       let numbered = document.getElementsByClassName("numbered");
       for (let i=0; i< numbered.length; i++) {
         initNumbers(numbered[i]);
@@ -465,6 +510,8 @@ p
       whiteNumber.style.color = "white";
 
       Tone.Transport.scheduleRepeat(stepSequence, "4n");
+
+      Tone.context.rawContext.suspend();
     }
 
     function getLink() {
