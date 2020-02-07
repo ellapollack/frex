@@ -9,18 +9,19 @@ var schedulerInterval = 10; // ms
 
 var rate = 0;
 var lastRate = 0;
+var first = true;
 var sequence = [""];
 var keys = {};
 var tuning;
 var wave;
 
 var sequencer;
+var step=0;
+var stepTime;
+var highlightedStep;
 
 var pressedKeys = new Set();
 var voices = {};
-var step=0;
-var highlightedStep;
-var stepTime=0;
 
 const fields = {t:'text',
                 k:'keymap',
@@ -73,7 +74,7 @@ function parseMath(expr) {
 }
 
 function getStepAtTime(time) {
-  return stepTime ? modulo(step + Math.floor(lastRate * (time - stepTime)), sequence.length) : 0;
+  return first ? 0 : modulo(step + Math.trunc(lastRate * (time - stepTime)), sequence.length);
 }
 
 function startContext(latencyHint, sampleRate) {
@@ -106,24 +107,32 @@ function highlightStep() {
 
 function stepSequence() {
   let time = audioContext.currentTime;
-  if (!stepTime) stepTime = time;
+  let nextStep, nextStepTime;
   lastRate = rate;
 
-  while (stepTime < time + lookahead) {
+  while (true) {
+
+    if (first) { nextStep = 0; nextStepTime = time; first = false; }
+    else {
+      nextStep = modulo(step + (rate<0 ? -1 : 1), sequence.length);
+      nextStepTime = stepTime + Math.abs(1/rate);
+    }
+
+    if (nextStepTime > time + lookahead) break;
+    else { stepTime = nextStepTime; step = nextStep; }
+
     for (key in voices)
       if (!(pressedKeys.has(key)
-          ||(sequence.length > step
-             &&sequence[step].includes(key))))
+          || (sequence.length > step
+              && sequence[step].includes(key))))
         stopVoice(key, stepTime);
 
-    if (sequence.length>step)
+    if (sequence.length>step) {
       for (let i=0; i<sequence[step].length; i++) {
         let key = sequence[step][i];
         startVoice(key, stepTime);
       }
-
-    stepTime += Math.abs(1/rate);
-    step = modulo(step + (rate>0 ? 1 : -1), sequence.length);
+    }
   }
 }
 
@@ -174,11 +183,10 @@ function changedRate() {
 
   if (rate==0) {
     for (key in voices) stopVoice(key, audioContext.currentTime);
-    stepTime = null;
-    step=0;
-    clearInterval(sequencer);
+    sequencer = clearInterval(sequencer);
+    first = true;
   }
-  else if (!stepTime) sequencer = setInterval(stepSequence, schedulerInterval);
+  else if (!sequencer) sequencer = setInterval(stepSequence, schedulerInterval);
 }
 
 function changedSequence() {
