@@ -10,8 +10,8 @@ var schedulerInterval = 10; // ms
 var rate = 0;
 var lastRate = 0;
 var first = true;
-var sequence = [""];
-var keys = {};
+var sequence;
+var keys;
 var tuning;
 var wave;
 
@@ -79,8 +79,8 @@ function getStepAtTime(time) {
 
 function startContext(latencyHint, sampleRate) {
   if (!sampleRate) sampleRate = 192000;
-  audioContext = new AudioContext({latencyHint: latencyHint, sampleRate: sampleRate});
-  lookahead = schedulerInterval/1000 + audioContext.baseLatency;
+  audioContext = new (window.AudioContext || window.webkitAudioContext)({latencyHint: latencyHint, sampleRate: sampleRate});
+  lookahead = 2*schedulerInterval/1000;
   document.getElementById("splash").style.display = "none";
 
   changedTuningString();
@@ -140,25 +140,25 @@ function startVoice(key, time) {
   if (!(key in voices) && (key in keys)) {
     let freq = Module.ccall('noteToFreq', 'number', ['number', 'number'], [keys[key], tuning]);
     if (freq!=0) {
-      let absFreq = Math.abs(freq);
       voices[key] = {osc: audioContext.createOscillator(),
-                    gain: audioContext.createGain(),
-                    fade: 0.5/absFreq};
+                     gain: audioContext.createGain(),
+                     freq: freq};
+      let absFreq = Math.abs(freq);
       voices[key].osc.setPeriodicWave(wave);
-      voices[key].osc.frequency.setValueAtTime(freq, time);
-      voices[key].osc.connect(voices[key].gain);
-      voices[key].gain.connect(audioContext.destination);
-      voices[key].osc.start(time);
+      voices[key].osc.frequency.setValueAtTime(freq, 0);
       voices[key].gain.gain.setValueAtTime(0, time);
-      voices[key].gain.gain.setTargetAtTime(Math.min(0.5,20/absFreq), time, voices[key].fade);
+      voices[key].gain.gain.setTargetAtTime(Math.min(0.5, 20/absFreq), time+0.01, 1/absFreq);
+      voices[key].osc.connect(voices[key].gain).connect(audioContext.destination);
+      voices[key].osc.start(time);
     }
   }
 }
 
 function stopVoice(key, time) {
   if (key in voices) {
-    voices[key].gain.gain.setTargetAtTime(0, time, voices[key].fade);
-    voices[key].osc.stop(time + voices[key].fade * 10);
+    let fade = 1/Math.abs(voices[key].freq);
+    voices[key].gain.gain.setTargetAtTime(0, time, fade);
+    voices[key].osc.stop(time + 10*fade);
     delete voices[key];
   }
 }
@@ -222,8 +222,8 @@ function changedTuningString() {
 
 function changedPartials() {
   let elm = document.getElementById("partials");
-  let partials = [0, ...htmlToString(elm.innerHTML).split(/\r?\n/).map(parseMath)];
-  wave = audioContext.createPeriodicWave(new Array(partials.length).fill(0), partials);
+  let partials = new Float32Array([0, ...htmlToString(elm.innerHTML).split(/\r?\n/).map(parseMath)]);
+  wave = audioContext.createPeriodicWave(new Float32Array(partials.length), partials);
   for (voice of Object.values(voices)) {voice.osc.setPeriodicWave(wave);}
 }
 
