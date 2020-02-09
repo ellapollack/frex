@@ -9,7 +9,7 @@ var schedulerInterval = 10; // ms
 
 var rate = 0;
 var lastRate = 0;
-var first = true;
+var stopped = true;
 var sequence;
 var keys;
 var tuning;
@@ -74,7 +74,7 @@ function parseMath(expr) {
 }
 
 function getStepAtTime(time) {
-  return first ? 0 : modulo(step + Math.trunc(lastRate * (time - stepTime)), sequence.length);
+  return stopped ? 0 : modulo(step + Math.trunc(lastRate * (time - stepTime)), sequence.length);
 }
 
 function startContext(latencyHint, sampleRate) {
@@ -112,7 +112,7 @@ function stepSequence() {
 
   while (true) {
 
-    if (first) { nextStep = 0; nextStepTime = time; first = false; }
+    if (stopped) { nextStep = 0; nextStepTime = time; stopped = false; }
     else {
       nextStep = modulo(step + (rate<0 ? -1 : 1), sequence.length);
       nextStepTime = stepTime + Math.abs(1/rate);
@@ -140,25 +140,25 @@ function startVoice(key, time) {
   if (!(key in voices) && (key in keys)) {
     let freq = Module.ccall('noteToFreq', 'number', ['number', 'number'], [keys[key], tuning]);
     if (freq!=0) {
-      voices[key] = {osc: audioContext.createOscillator(),
-                     gain: audioContext.createGain(),
-                     freq: freq};
       let absFreq = Math.abs(freq);
-      voices[key].osc.setPeriodicWave(wave);
-      voices[key].osc.frequency.setValueAtTime(freq, 0);
-      voices[key].gain.gain.setValueAtTime(0, time);
-      voices[key].gain.gain.setTargetAtTime(Math.min(0.5, 20/absFreq), time+0.01, 1/absFreq);
-      voices[key].osc.connect(voices[key].gain).connect(audioContext.destination);
-      voices[key].osc.start(time);
+      let osc = audioContext.createOscillator();
+      let gain = audioContext.createGain();
+      let fade = 0.25/absFreq
+      osc.setPeriodicWave(wave);
+      osc.frequency.value = freq;
+      gain.gain.value = 0;
+      gain.gain.setTargetAtTime(Math.min(0.5, 20/absFreq), time, fade);
+      osc.connect(gain).connect(audioContext.destination);
+      osc.start(time);
+      voices[key] = {osc: osc, gain: gain, fade: fade};
     }
   }
 }
 
 function stopVoice(key, time) {
   if (key in voices) {
-    let fade = 1/Math.abs(voices[key].freq);
-    voices[key].gain.gain.setTargetAtTime(0, time, fade);
-    voices[key].osc.stop(time + 10*fade);
+    voices[key].gain.gain.setTargetAtTime(0, time, voices[key].fade);
+    voices[key].osc.stop(time + 10 * voices[key].fade);
     delete voices[key];
   }
 }
@@ -184,7 +184,7 @@ function changedRate() {
   if (rate==0) {
     for (key in voices) stopVoice(key, audioContext.currentTime);
     sequencer = clearInterval(sequencer);
-    first = true;
+    stopped = true;
   }
   else if (!sequencer) sequencer = setInterval(stepSequence, schedulerInterval);
 }
