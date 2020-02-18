@@ -62,6 +62,7 @@ window.onload = function() {
   for (numbered of document.getElementsByClassName("numbered")) initNumbers(numbered);
 
   audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  document.getElementById("start").onclick = start;
   start();
 };
 
