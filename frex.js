@@ -31,11 +31,7 @@ const fields = {k:'keymap',
                 n:'baseNote',
                 f:'baseFreq'};
 
-
-window.addEventListener('keydown', this.onkeydown);
-window.addEventListener('keyup', this.onkeyup);
-
-window.onload = function() {
+Module.onRuntimeInitialized = function() {
   document.getElementById('keymap').oninput = changedKeymap;
   document.getElementById('partials').oninput = changedPartials;
   document.getElementById('scale').oninput = changedTuningString;
@@ -102,6 +98,9 @@ function start() {
       el.style.background = "#00ff000f";
     }
     document.getElementById("start").style.display = "none";
+
+    window.addEventListener('keydown', this.onkeydown);
+    window.addEventListener('keyup', this.onkeyup);
 
     changedTuningString();
     changedKeymap();
