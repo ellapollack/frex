@@ -1246,11 +1246,11 @@ function updateGlobalBufferAndViews(buf) {
 }
 
 var STATIC_BASE = 1024,
-    STACK_BASE = 5249456,
+    STACK_BASE = 5249424,
     STACKTOP = STACK_BASE,
-    STACK_MAX = 6576,
-    DYNAMIC_BASE = 5249456,
-    DYNAMICTOP_PTR = 6416;
+    STACK_MAX = 6544,
+    DYNAMIC_BASE = 5249424,
+    DYNAMICTOP_PTR = 6384;
 
 assert(STACK_BASE % 16 === 0, 'stack must start aligned');
 assert(DYNAMIC_BASE % 16 === 0, 'heap must start aligned');
@@ -1785,7 +1785,7 @@ var ASM_CONSTS = {
 
 
 
-// STATICTOP = STATIC_BASE + 5552;
+// STATICTOP = STATIC_BASE + 5520;
 /* global initializers */  __ATINIT__.push({ func: function() { ___wasm_call_ctors() } });
 
 
@@ -1846,7 +1846,7 @@ var ASM_CONSTS = {
     }
 
   function _emscripten_get_sbrk_ptr() {
-      return 6416;
+      return 6384;
     }
 
   function _emscripten_memcpy_big(dest, src, num) {
@@ -2101,6 +2101,12 @@ var ASM_CONSTS = {
       return (end-num)|0;
     }
 
+  
+  function _round(d) {
+      d = +d;
+      return d >= +0 ? +Math_floor(d + +0.5) : +Math_ceil(d - +0.5);
+    }
+
   function _setTempRet0($i) {
       setTempRet0(($i) | 0);
     }
@@ -2136,10 +2142,10 @@ function intArrayToString(array) {
 }
 
 
-// ASM_LIBRARY EXTERN PRIMITIVES: Int8Array,Int32Array
+// ASM_LIBRARY EXTERN PRIMITIVES: Int8Array,Int32Array,Math_floor,Math_ceil
 
 var asmGlobalArg = {};
-var asmLibraryArg = { "__handle_stack_overflow": ___handle_stack_overflow, "__lock": ___lock, "__unlock": ___unlock, "emscripten_get_sbrk_ptr": _emscripten_get_sbrk_ptr, "emscripten_memcpy_big": _emscripten_memcpy_big, "emscripten_resize_heap": _emscripten_resize_heap, "fd_write": _fd_write, "memory": wasmMemory, "setTempRet0": _setTempRet0, "table": wasmTable };
+var asmLibraryArg = { "__handle_stack_overflow": ___handle_stack_overflow, "__lock": ___lock, "__unlock": ___unlock, "emscripten_get_sbrk_ptr": _emscripten_get_sbrk_ptr, "emscripten_memcpy_big": _emscripten_memcpy_big, "emscripten_resize_heap": _emscripten_resize_heap, "fd_write": _fd_write, "memory": wasmMemory, "round": _round, "setTempRet0": _setTempRet0, "table": wasmTable };
 var asm = createWasm();
 var real____wasm_call_ctors = asm["__wasm_call_ctors"];
 asm["__wasm_call_ctors"] = function() {
@@ -2155,18 +2161,11 @@ asm["noteToFreq"] = function() {
   return real__noteToFreq.apply(null, arguments);
 };
 
-var real__tuningFromString = asm["tuningFromString"];
-asm["tuningFromString"] = function() {
+var real__newTuning = asm["newTuning"];
+asm["newTuning"] = function() {
   assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
   assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
-  return real__tuningFromString.apply(null, arguments);
-};
-
-var real__te_interp = asm["te_interp"];
-asm["te_interp"] = function() {
-  assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
-  assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
-  return real__te_interp.apply(null, arguments);
+  return real__newTuning.apply(null, arguments);
 };
 
 var real__malloc = asm["malloc"];
@@ -2174,6 +2173,13 @@ asm["malloc"] = function() {
   assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
   assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
   return real__malloc.apply(null, arguments);
+};
+
+var real__te_interp = asm["te_interp"];
+asm["te_interp"] = function() {
+  assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
+  assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
+  return real__te_interp.apply(null, arguments);
 };
 
 var real__free = asm["free"];
@@ -2294,22 +2300,22 @@ var _noteToFreq = Module["_noteToFreq"] = function() {
   return Module["asm"]["noteToFreq"].apply(null, arguments)
 };
 
-var _tuningFromString = Module["_tuningFromString"] = function() {
+var _newTuning = Module["_newTuning"] = function() {
   assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
   assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
-  return Module["asm"]["tuningFromString"].apply(null, arguments)
-};
-
-var _te_interp = Module["_te_interp"] = function() {
-  assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
-  assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
-  return Module["asm"]["te_interp"].apply(null, arguments)
+  return Module["asm"]["newTuning"].apply(null, arguments)
 };
 
 var _malloc = Module["_malloc"] = function() {
   assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
   assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
   return Module["asm"]["malloc"].apply(null, arguments)
+};
+
+var _te_interp = Module["_te_interp"] = function() {
+  assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
+  assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
+  return Module["asm"]["te_interp"].apply(null, arguments)
 };
 
 var _free = Module["_free"] = function() {

@@ -13,169 +13,113 @@
       background-image:url('stars.png');
       background-attachment: fixed;
       background-repeat: repeat;
-      text-align: center;
       font-family: monospace;
-      font-size: 16px;
       color: #ffffff88;
-    }
-
-    .vert {
-      display:flex;
-      justify-content: center;
-      align-items:center;
-    }
-
-    .horiz {
-      margin-left: 2em;
-      margin-right: 2em;
-    }
-
-    #title {
+      padding: 0;
+      margin: 0;
       display: flex;
+      flex-direction: column;
+      height: 100vh;
     }
 
-    #title>a {
-      flex: 1;
-      width: 2em;
-      display: block;
-      font-size: 2em;
-      padding: 0.5em;
-      text-decoration: none;
+    #main {
+      display: flex;
+      justify-content: center;
+    }
+
+    .column {
+      text-align: center;
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+      flex-direction:column;
+      margin: 0;
+      padding: 0;
+      overflow-y: scroll;
+    }
+
+    .label {
+      padding: 0;
+      margin: 1em 1em 0 1em;
     }
 
     #inputsContainer {
       display: flex;
-      justify-content: center;
+      justify-content: left;
     }
 
-    [contenteditable="plaintext-only"] {
-      margin: 0 0 1em 0;
-      background: #00ff000f;
+    .input {
+      background: transparent;
       font-family: monospace;
       padding: 0.5em;
-      color: #0f0;
+      margin: 1em;
       border: 1px solid white;
       text-align: left;
     }
 
-    #splash {
-      background-color: black;
-      background-image:url('stars.png');
-      background-attachment: fixed;
-      background-repeat: repeat;
-      position:fixed;
-      top:0;
-      bottom:0;
-      left:0;
-      right:0;
-      height:100%;
-      width:100%;
-      z-index: 100;
+    #toprow {
+      background: black;
+      border-bottom: white 1px solid;
+      color: white;
       display: flex;
-      justify-content: center;
-      align-items:center;
-      color: #fff;
+      justify-content: space-between;
     }
 
-    .btn {
-      padding: 1em 0 1em 0;
-      margin: 0.5em 0 0.5em 0;
-      width: 100%;
-      height: 1em;
-      color: #000;
-      font-weight: bold;
+    #toprow>a {
+      padding: 1em;
+      display: block;
+    }
+
+    #start {
       cursor: pointer;
+      color: #0f0;
+      padding: 0.5em;
+      margin: 1em;
+      line-height: 1em;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    svg {
+      display: block;
+      padding: 0;
+      margin: 0;
+    }
+
+    #oscilloscope {
+      flex: 1 1 auto;
     }
   </style>
 </head>
 
 <body>
-  <div id="splash">
-    <div>Select a latency setting:
-    <div class="btn" style="background-color:#f00;" onclick="startContext('playback')">Fewer glitches</div>
-    <div class="btn" style="background-color:#ff0;" onclick="startContext('balanced')">Balanced</div>
-    <div class="btn" style="background-color:#0f0;" onclick="startContext('interactive')">Low latency</div>
-  </div>
-  </div>
-  <div style="display: inline-block;">
-    <div id="title" class="vert">
-      <a href="https://maxis.cool/frex" style="color:blue;">&#8635;<div style="font-size:0.5em;">RESET</div></a>
-      <a href="https://github.com/maxwellpollack/frex" style="color:yellow;">/<div style="font-size:0.5em;">CODE</div></a>
-      <a href="https://github.com/sponsors/maxwellpollack" style="color:red;">&#10084;<div style="font-size:0.5em;">SUPPORT</div></a>
-    </div>
-    <pre id="text" contenteditable="plaintext-only" spellcheck='false'>
-
-  ███████╗██████╗ ███████╗██╗  ██╗
-  ██╔════╝██╔══██╗██╔════╝╚██╗██╔╝
-  █████╗  ██████╔╝█████╗   ╚███╔╝
-  ██╔══╝  ██╔══██╗██╔══╝   ██╔██╗
-  ██║     ██║  ██║███████╗██╔╝ ██╗
-  ╚═╝     ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝
-          equency         plorer
-
-               a precisely-tunable
-               keyboard-controlled
-                    software organ
- _________________________________
-
- COPY THE URL TO SHARE YOUR PATCH!
- _________________________________ 
-
-      RATE: the number of steps
-            to play per second
-
-  SEQUENCE: the key(s) to play at
-            each step
-
-   KEY MAP: the key(s) to map to
-            each integer note
-
- BASE NOTE: the integer note of
-            SCALE degree 0
-
- BASE FREQ: the frequency of
-            SCALE degree 0
-            (cycles per second)
-
-     SCALE: the frequency interval
-            of each SCALE degree
-            (the last of which is
-            the octave)
-
-  PARTIALS: the amplitude of
-            each integer multiple
-            of the fundamental
-            frequency
-
-</pre>
-  </div>
-  <div id="inputsContainer">
-    <div class="horiz">
-      <pre class="label">RATE</pre>
-      <div class="vert">
-        <pre id="rate" class="single-line" spellcheck="false" contenteditable="plaintext-only">4</pre>
+  <div id="toprow">
+    <a href="https://github.com/maxwellpollack/frex">
+      <svg stroke="white" stroke-width="1px" stroke-linecap="round" fill="none" viewBox="0 0 144 44" height="2em">
+        <path d="M -12 -24 L -12 18 M -12 -24 L 14 -24 M -12 -4 L 4 -4" transform="translate(13,25)" vector-effect="non-scaling-stroke"></path>
+        <path d="M -14 -24 L -14 18 M -14 -24 L 4 -24 L 10 -22 L 12 -20 L 14 -16 L 14 -12 L 12 -8 L 10 -6 L 4 -4 L -14 -4 M 0 -4 L 14 18" transform="translate(49,25)" vector-effect="non-scaling-stroke"></path>
+        <path d="M -12 -24 L -12 18 M -12 -24 L 14 -24 M -12 -4 L 4 -4 M -12 18 L 14 18" transform="translate(91,25)" vector-effect="non-scaling-stroke"></path>
+        <path d="M -14 -24 L 14 18 M 14 -24 L -14 18" transform="translate(129,25)" vector-effect="non-scaling-stroke"></path>
+      </svg>
+    </a>
+    <svg viewBox="0 -1 1 2" fill="none" height="4em" width="100%" preserveAspectRatio="none" stroke="#0f0" stroke-width="1px" stroke-linecap="round">
+      <path id="oscilloscope" d=""  vector-effect="non-scaling-stroke"></path>
+    </svg>
+    <div id="start" onclick="start()">START</div>
+    <a href="https://github.com/sponsors/maxwellpollack">
+      <div style="color:red; align-self: center;">
+        <svg viewBox="-1 0 6 5" height="2em" fill="red">
+          <path d="M 2 4 a 1 1 0 0 0 -1 -1 a 1 1 0 0 1 -1 -1 a 1 1 0 0 1 1 -1 a 1 1 0 0 1 1 1 a 1 1 0 0 1 1 -1 a 1 1 0 0 1 1 1 a 1 1 0 0 1 -1 1 a 1 1 0 0 0 -1 1" vector-effect="non-scaling-stroke"></path>
+        </svg>
       </div>
-      <pre class="label">SEQUENCE</pre>
-      <pre id="sequence" class="numbered" spellcheck="false" contenteditable="plaintext-only">zsdf
-zerf
-sdf5
-sdfg
-srt
-xcyh
-rft
-dfry
-456y
-ghj
-fyn
-ry5
-hj4
-dbg5
-xfgh
-zfgy</pre>
-    </div>
-    <div class="horiz">
+    </a>
+  </div>
+
+  <div id="main">
+    <div class="column">
       <pre class="label">KEY MAP</pre>
-      <pre id="keymap" class="numbered" spellcheck="false" contenteditable="plaintext-only">`
+      <pre id="keymap" class="numbered input">`
 z
 a
 q
@@ -228,28 +172,43 @@ p
 
 \</pre>
     </div>
-    <div class="horiz">
-      <pre class="label">BASE NOTE</pre>
-      <div class="vert"><pre id="baseNote" class="single-line" spellcheck="false" contenteditable="plaintext-only">2</pre></div>
-      <pre class="label">BASE FREQ</pre>
-      <div class="vert"><pre id="baseFreq" class="single-line" spellcheck="false" contenteditable="plaintext-only">64</pre></div>
-      <pre class="label">SCALE</pre>
-      <pre id="scale" class="numbered" spellcheck="false" contenteditable="plaintext-only">4/3
+    <div class="column">
+        <pre class="label">RATE</pre>
+        <pre id="rate" class="single-line input">4</pre>
+        <pre class="label">SEQUENCE</pre>
+        <pre id="sequence" class="numbered input">zsdf
+zerf
+sdf5
+sdfg
+srt
+xcyh
+rft
+dfry
+456y
+ghj
+fyn
+ry5
+hj4
+dbg5
+xfgh
+zfgy</pre>
+    </div>
+    <div class="column">
+        <pre class="label">BASE NOTE</pre>
+        <pre id="baseNote" class="single-line input">2</pre>
+        <pre class="label">BASE FREQ</pre>
+        <pre id="baseFreq" class="single-line input">64</pre>
+        <pre class="label">SCALE</pre>
+        <pre id="scale" class="numbered input">4/3
 (4/3)^2
 (4/3)^3
 3/2</pre>
     </div>
-    <div class="horiz">
+    <div class="column">
       <pre class="label">PARTIALS</pre>
-      <pre id="partials" class="numbered" spellcheck="false" contenteditable="plaintext-only">1
-1/2
-1/3
-1/4
-
-1/6
-
-
-1/9</pre>
+      <pre id="partials" class="numbered input">1
+2
+3</pre>
     </div>
   </div>
 </body>

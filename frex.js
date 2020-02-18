@@ -7,24 +7,23 @@ var lookahead;
 
 var schedulerInterval = 10; // ms
 
-var rate = 0;
-var lastRate = 0;
-var stopped = true;
-var sequence;
-var keys;
-var tuning;
-var wave;
+var keys, rate, sequence, tuning, waveform;
+var baseFreq;
+
+var analyser;
+var oscilloscope;
 
 var sequencer;
 var step=0;
 var stepTime;
+var lastRate = 0;
+var stopped = true;
 var highlightedStep;
 
 var pressedKeys = new Set();
 var voices = {};
 
-const fields = {t:'text',
-                k:'keymap',
+const fields = {k:'keymap',
                 p:'partials',
                 s:'scale',
                 r:'rate',
@@ -45,7 +44,7 @@ window.onload = function() {
   document.getElementById('sequence').oninput = changedSequence;
   document.getElementById('rate').oninput = changedRate;
 
-  for (el of document.querySelectorAll('[contenteditable="plaintext-only"]'))
+  for (el of document.getElementsByClassName('input'))
     el.onblur = () =>  window.history.replaceState({}, "", getLink());
 
   for (el of document.getElementsByClassName('single-line')) {
@@ -61,6 +60,9 @@ window.onload = function() {
     if (key in fields) document.getElementById(fields[key]).innerHTML = decodeURIComponent(value);
 
   for (numbered of document.getElementsByClassName("numbered")) initNumbers(numbered);
+
+  audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  start();
 };
 
 window.onbeforeunload = () => {
@@ -77,32 +79,73 @@ function getStepAtTime(time) {
   return stopped ? 0 : modulo(step + Math.trunc(lastRate * (time - stepTime)), sequence.length);
 }
 
-function startContext(latencyHint, sampleRate) {
-  if (!sampleRate) sampleRate = 192000;
-  audioContext = new (window.AudioContext || window.webkitAudioContext)({latencyHint: latencyHint, sampleRate: sampleRate});
-  lookahead = 2*schedulerInterval/1000;
-  document.getElementById("splash").style.display = "none";
+function start() {
+  // Check if autoplay is not allowed
+  if (audioContext.state=='suspended') audioContext.resume();
+  if (audioContext.state=='running') {
+    analyser = audioContext.createAnalyser();
+    analyser.fftSize = 32768;
 
-  changedTuningString();
-  changedKeymap();
-  changedPartials();
-  changedSequence();
-  changedRate();
-  requestAnimationFrame(highlightStep);
+    analyser.connect(audioContext.destination);
+
+    if (analyser.getFloatTimeDomainData)
+      oscilloscope = new Float32Array(analyser.frequencyBinCount);
+    else
+      oscilloscope = new Uint8Array(analyser.frequencyBinCount);
+
+    lookahead = 2*schedulerInterval/1000;
+    for (el of document.getElementsByClassName("input")) {
+      el.setAttribute("contenteditable","plaintext-only");
+      el.setAttribute("spellcheck", "false");
+      el.style.color = "#0f0";
+      el.style.background = "#00ff000f";
+    }
+    document.getElementById("start").style.display = "none";
+
+    changedTuningString();
+    changedKeymap();
+    changedPartials();
+    changedSequence();
+    changedRate();
+    requestAnimationFrame(draw);
+  }
 }
 
 function htmlToString(html) {
   return html.replace("<br>","\n").replace(/\n$/,"");
 }
 
-function highlightStep() {
-  let currentStep = getStepAtTime(audioContext.currentTime);
+function draw() {
+  let time = audioContext.currentTime;
+  let currentStep = getStepAtTime(time);
   if (highlightedStep != currentStep) {
     if (highlightedStep) highlightedStep.style.color = "";
     highlightedStep = document.querySelector('#sequence').parentNode.firstChild.childNodes[currentStep];
     if (highlightedStep) highlightedStep.style.color = "white";
   }
-  window.requestAnimationFrame(highlightStep);
+
+  let transform;
+  if (analyser.getFloatTimeDomainData) {
+    analyser.getFloatTimeDomainData(oscilloscope);
+    transform = x => x;
+  } else {
+    analyser.getByteTimeDomainData(oscilloscope);
+    transform = x => (x-128)/128;
+  }
+
+  if (oscilloscope.length && baseFreq) {
+    let el = document.getElementById("oscilloscope");
+    let str = "";
+    let sr = audioContext.sampleRate;
+    let period = Math.min(oscilloscope.length/2, sr/baseFreq);
+    let phase = modulo(-time*sr, period);
+    for (let i=0; i<2*period; i++)
+      str += (i===0? "M " : "L ") + (i-phase)/period + " " +
+             transform(oscilloscope[i+oscilloscope.length-Math.ceil(2*period)]) + " ";
+
+    el.setAttribute('d', str);
+  }
+  window.requestAnimationFrame(draw);
 }
 
 function stepSequence() {
@@ -112,7 +155,7 @@ function stepSequence() {
 
   while (true) {
 
-    if (stopped) { nextStep = 0; nextStepTime = time; stopped = false; }
+    if (stopped) { nextStep = step; nextStepTime = time; stopped = false; }
     else {
       nextStep = modulo(step + (rate<0 ? -1 : 1), sequence.length);
       nextStepTime = stepTime + Math.abs(1/rate);
@@ -137,19 +180,20 @@ function stepSequence() {
 }
 
 function startVoice(key, time) {
-  if (!(key in voices) && (key in keys)) {
+  if (key in keys) {
     let freq = Module.ccall('noteToFreq', 'number', ['number', 'number'], [keys[key], tuning]);
-    if (freq!=0) {
+    if (freq!=0 && !isNaN(freq)) {
       let absFreq = Math.abs(freq);
       let osc = audioContext.createOscillator();
       let gain = audioContext.createGain();
       let fade = 0.25/absFreq
-      osc.setPeriodicWave(wave);
+      osc.setPeriodicWave(waveform);
       osc.frequency.value = freq;
       gain.gain.value = 0;
-      gain.gain.setTargetAtTime(Math.min(0.5, 20/absFreq), time, fade);
-      osc.connect(gain).connect(audioContext.destination);
+      gain.gain.setTargetAtTime(20/absFreq, time, fade);
+      osc.connect(gain).connect(analyser);
       osc.start(time);
+      if (key in voices) stopVoice(key, time);
       voices[key] = {osc: osc, gain: gain, fade: fade};
     }
   }
@@ -164,7 +208,7 @@ function stopVoice(key, time) {
 }
 
 function onkeydown(e) {
-  if (!(e.repeat || e.shiftKey || e.ctrlKey || e.metaKey)) {
+  if (!(e.repeat || e.ctrlKey || e.metaKey)) {
     pressedKeys.add(e.key);
     startVoice(e.key, audioContext.currentTime);
   }
@@ -184,6 +228,7 @@ function changedRate() {
   if (rate==0) {
     for (key in voices) stopVoice(key, audioContext.currentTime);
     sequencer = clearInterval(sequencer);
+    step = 0;
     stopped = true;
   }
   else if (!sequencer) sequencer = setInterval(stepSequence, schedulerInterval);
@@ -192,6 +237,9 @@ function changedRate() {
 function changedSequence() {
   let elm = document.getElementById('sequence');
   sequence = htmlToString(elm.innerHTML).split(/\r?\n/);
+  step = modulo(step, sequence.length);
+  for (key in voices) if (!sequence[step].includes(key)) stopVoice(key, audioContext.currentTime);
+  for (const key of sequence[step]) if (!(key in voices)) startVoice(key, audioContext.currentTime);
 }
 
 function changedKeymap() {
@@ -208,23 +256,27 @@ function changedKeymap() {
 function changedTuningString() {
 
   let elm = document.getElementById("scale");
-  let scale = htmlToString(elm.innerHTML);
-  let baseNote = document.getElementById("baseNote").innerHTML;
-  let baseFreq = document.getElementById("baseFreq").innerHTML;
+  let scaleString = htmlToString(elm.innerHTML);
+  let baseNoteString = document.getElementById("baseNote").innerHTML;
+  let baseFreqString = document.getElementById("baseFreq").innerHTML;
 
-  let tmp = Module.ccall('tuningFromString','number', ['string'],
-    [baseNote + ":" + baseFreq + "\n" + scale]);
+  baseFreq = Math.abs(parseMath(baseFreqString));
+
+  let tmp = Module.ccall('newTuning','number', ['string','string','string'], [baseNoteString, baseFreqString, scaleString]);
   if (tmp != 0) {
     Module.ccall('free', 'void', ['number'], [tuning]);
     tuning = tmp;
+    for (key in voices) startVoice(key, audioContext.currentTime);
   }
 }
 
 function changedPartials() {
   let elm = document.getElementById("partials");
-  let partials = new Float32Array([0, ...htmlToString(elm.innerHTML).split(/\r?\n/).map(parseMath)]);
-  wave = audioContext.createPeriodicWave(new Float32Array(partials.length), partials);
-  for (voice of Object.values(voices)) {voice.osc.setPeriodicWave(wave);}
+  let partials = htmlToString(elm.innerHTML).split(/\r?\n/).map(parseMath).map(Math.round);
+  let spectrum = new Float32Array(1 + Math.max(...partials.map(Math.abs)));
+  for (partial of partials) if (partial!=0) spectrum[Math.abs(partial)] = 1/partial;
+  waveform = audioContext.createPeriodicWave(new Float32Array(spectrum.length), spectrum);
+  for (voice of Object.values(voices)) { voice.osc.setPeriodicWave(waveform); }
 }
 
 function getLink() {
@@ -235,21 +287,24 @@ function getLink() {
   return str.replace(/^\&/,"?");
 }
 
-function initNumbers(numbered) {
+function initNumbers(numbered, title) {
   let container = document.createElement("div");
   let numbers = document.createElement("pre");
   numbered.parentNode.insertBefore(container, numbered);
   container.appendChild(numbers);
   container.appendChild(numbered);
+  if (title) {
+    let title = document.createElement("pre");
+
+  }
   container.style.position = "relative";
-  container.style.display = "inline-block";
   numbers.style.position = "absolute";
   numbers.style.textAlign = "right";
   numbers.style.top = "0";
+  numbers.style.marginLeft = "1em";
 
   let style = window.getComputedStyle(numbered);
   numbers.style.padding = style.getPropertyValue('padding');
-  numbers.style.margin = style.getPropertyValue('margin');
   numbers.style.fontSize = style.getPropertyValue('font-size');
 
   updateNumbers(numbered);
