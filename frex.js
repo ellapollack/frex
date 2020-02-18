@@ -86,9 +86,9 @@ function start() {
     analyser.connect(audioContext.destination);
 
     if (analyser.getFloatTimeDomainData)
-      oscilloscope = new Float32Array(analyser.frequencyBinCount);
+      oscilloscope = new Float32Array(analyser.fftSize);
     else
-      oscilloscope = new Uint8Array(analyser.frequencyBinCount);
+      oscilloscope = new Uint8Array(analyser.fftSize);
 
     lookahead = 2*schedulerInterval/1000;
     for (el of document.getElementsByClassName("input")) {
@@ -97,10 +97,11 @@ function start() {
       el.style.color = "#0f0";
       el.style.background = "#00ff000f";
     }
+
     document.getElementById("start").style.display = "none";
 
-    window.addEventListener('keydown', this.onkeydown);
-    window.addEventListener('keyup', this.onkeyup);
+    document.addEventListener('keydown', onkeydown);
+    document.addEventListener('keyup', onkeyup);
 
     changedTuningString();
     changedKeymap();
@@ -138,10 +139,10 @@ function draw() {
     let str = "";
     let sr = audioContext.sampleRate;
     let period = Math.min(oscilloscope.length/2, sr/baseFreq);
-    let phase = modulo(-time*sr, period);
+    let phase = modulo(time*sr, period);
     for (let i=0; i<2*period; i++)
       str += (i===0? "M " : "L ") + (i-phase)/period + " " +
-             transform(oscilloscope[i+oscilloscope.length-Math.ceil(2*period)]) + " ";
+             transform(oscilloscope[oscilloscope.length-1-i]) + " ";
 
     el.setAttribute('d', str);
   }
