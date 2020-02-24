@@ -62,16 +62,6 @@ Module.onRuntimeInitialized = function() {
   start();
 };
 
-window.onbeforeunload = () => {
-   Module.ccall('free', 'void', ['number'], [tuning]);
-   return null;
-}
-
-function parseMath(expr) {
-  let result = Module.ccall('te_interp', 'number', ['string','number'], [expr, 0]);
-  return isNaN(result) ? 0 : result;
-}
-
 function getStepAtTime(time) {
   return stopped ? 0 : modulo(step + Math.trunc(lastRate * (time - stepTime)), sequence.length);
 }
@@ -182,7 +172,7 @@ function stepSequence() {
 
 function startVoice(key, time) {
   if (key in keys) {
-    let freq = Module.ccall('noteToFreq', 'number', ['number', 'number'], [keys[key], tuning]);
+    let freq = tuning.noteToFreq(keys[key]);
     if (freq!=0 && !isNaN(freq)) {
       let absFreq = Math.abs(freq);
       let osc = audioContext.createOscillator();
@@ -223,8 +213,7 @@ function onkeyup(e) {
 }
 
 function changedRate() {
-  let expr = document.getElementById('rate').innerHTML;
-  rate = parseMath(expr);
+  rate = parseExpr(document.getElementById('rate').innerHTML);
 
   if (rate==0) {
     for (key in voices) stopVoice(key, audioContext.currentTime);
@@ -261,19 +250,15 @@ function changedTuningString() {
   let baseNoteString = document.getElementById("baseNote").innerHTML;
   let baseFreqString = document.getElementById("baseFreq").innerHTML;
 
-  baseFreq = Math.abs(parseMath(baseFreqString));
+  baseFreq = Math.abs(parseExpr(baseFreqString));
 
-  let tmp = Module.ccall('newTuning','number', ['string','string','string'], [baseNoteString, baseFreqString, scaleString]);
-  if (tmp != 0) {
-    Module.ccall('free', 'void', ['number'], [tuning]);
-    tuning = tmp;
-    for (key in voices) startVoice(key, audioContext.currentTime);
-  }
+  tuning = new Tuning(baseNoteString, baseFreqString, scaleString);
+  for (key in voices) startVoice(key, audioContext.currentTime);
 }
 
 function changedPartials() {
   let elm = document.getElementById("partials");
-  let partials = htmlToString(elm.innerHTML).split(/\r?\n/).map(parseMath).map(Math.round);
+  let partials = htmlToString(elm.innerHTML).split(/\r?\n/).map(parseExpr).map(Math.round);
   let spectrum = new Float32Array(1 + Math.max(...partials.map(Math.abs)));
   for (partial of partials) if (partial!=0) spectrum[Math.abs(partial)] = 1/partial;
   waveform = audioContext.createPeriodicWave(new Float32Array(spectrum.length), spectrum);
@@ -306,7 +291,6 @@ function initNumbers(numbered, title) {
 
   let style = window.getComputedStyle(numbered);
   numbers.style.padding = style.getPropertyValue('padding');
-  numbers.style.fontSize = style.getPropertyValue('font-size');
 
   updateNumbers(numbered);
   numbered.addEventListener("input", () => {updateNumbers(numbered)});

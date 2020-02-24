@@ -14,6 +14,7 @@
       background-attachment: fixed;
       background-repeat: repeat;
       font-family: monospace;
+      font-size: 2vh;
       color: #ffffff88;
       padding: 0;
       margin: 0;
@@ -25,6 +26,7 @@
     #main {
       display: flex;
       justify-content: center;
+      flex: 1 1 auto;
     }
 
     .column {
@@ -43,11 +45,6 @@
       margin: 1em 1em 0 1em;
     }
 
-    #inputsContainer {
-      display: flex;
-      justify-content: left;
-    }
-
     .input {
       background: transparent;
       font-family: monospace;
@@ -58,16 +55,17 @@
     }
 
     #toprow {
-      background: black;
-      border-bottom: white 1px solid;
       color: white;
       display: flex;
       justify-content: space-between;
+      align-items: center;
+      min-height: 8em;
     }
 
     #toprow>a {
       padding: 1em;
       display: block;
+      margin: auto;
     }
 
     #start {
@@ -75,7 +73,6 @@
       color: #0f0;
       padding: 0.5em;
       margin: 1em;
-      line-height: 1em;
       position: absolute;
       left: 50%;
       transform: translateX(-50%);
@@ -85,10 +82,7 @@
       display: block;
       padding: 0;
       margin: 0;
-    }
-
-    #oscilloscope {
-      flex: 1 1 auto;
+      align-self: stretch;
     }
   </style>
 </head>
@@ -103,7 +97,7 @@
         <path d="M -14 -24 L 14 18 M 14 -24 L -14 18" transform="translate(129,25)" vector-effect="non-scaling-stroke"></path>
       </svg>
     </a>
-    <svg viewBox="0 -1 1 2" fill="none" height="4em" width="100%" preserveAspectRatio="none" stroke="#0f0" stroke-width="1px" stroke-linecap="round">
+    <svg viewBox="0 -1 1 2" fill="none" height-"100%" width="100%" preserveAspectRatio="none" stroke="#0f0" stroke-width="1px" stroke-linecap="round">
       <path id="oscilloscope" d=""  vector-effect="non-scaling-stroke"></path>
     </svg>
     <div id="start">START</div>
