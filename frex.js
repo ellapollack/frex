@@ -231,12 +231,14 @@ function changedSequence() {
   let elm = document.getElementById('sequence');
   sequence = htmlToString(elm.innerHTML).split(/\r?\n/);
   step = modulo(step, sequence.length);
-  for (key in voices)
-    if (!sequence[step].includes(key))
-      stopVoice(key, audioContext.currentTime, 'seq');
-  for (const key of sequence[step])
-    if (!(key in voices))
-      startVoice(key, audioContext.currentTime, 'seq');
+  if (sequencer) {
+    for (key in voices)
+      if (!sequence[step].includes(key))
+        stopVoice(key, audioContext.currentTime, 'seq');
+    for (const key of sequence[step])
+      if (!(key in voices))
+        startVoice(key, audioContext.currentTime, 'seq');
+  }
 }
 
 function changedKeymap() {

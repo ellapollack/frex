@@ -21,6 +21,8 @@
 - ### `PARTIALS`
   each line is a **math expression** for the integer frequency interval of a sine component in the oscillator waveform
 
+---
+
 **Frequency Explorer** was built using these open-source code libraries:
 
 - [scalemap](https://github.com/maxwellpollack/scalemap) for **microtonal note-to-frequency mapping**
