@@ -6,6 +6,7 @@ var audioContext;
 var lookahead;
 
 var schedulerInterval = 10; // ms
+var kybdActive = true;
 
 var keys, rate, sequence, tuning, waveform;
 var baseFreq;
@@ -40,8 +41,17 @@ Module.onRuntimeInitialized = function() {
   document.getElementById('sequence').oninput = changedSequence;
   document.getElementById('rate').oninput = changedRate;
 
-  for (el of document.getElementsByClassName('input'))
-    el.onblur = () =>  window.history.replaceState({}, "", getLink());
+  for (el of document.getElementsByClassName('input')) {
+      el.setAttribute("contenteditable","plaintext-only");
+      el.setAttribute("spellcheck", "false");
+      el.style.color = "#0f0";
+      el.style.background = "#00ff000f";
+      el.onblur = () => {
+        window.history.replaceState({}, "", getLink())
+        kybdActive = true;
+      };
+      el.onfocus = () => { kybdActive = false };
+  }
 
   for (el of document.getElementsByClassName('single-line')) {
     el.addEventListener('keydown', (e) => {if (e.keyCode == 13) e.preventDefault();});
@@ -82,10 +92,6 @@ function start() {
 
     lookahead = 2*schedulerInterval/1000;
     for (el of document.getElementsByClassName("input")) {
-      el.setAttribute("contenteditable","plaintext-only");
-      el.setAttribute("spellcheck", "false");
-      el.style.color = "#0f0";
-      el.style.background = "#00ff000f";
     }
 
     document.getElementById("start").style.display = "none";
@@ -156,67 +162,64 @@ function stepSequence() {
     else { stepTime = nextStepTime; step = nextStep; }
 
     for (key in voices)
-      if (!(pressedKeys.has(key)
-          || (sequence.length > step
-              && sequence[step].includes(key))))
-        stopVoice(key, stepTime);
+      if (!sequence[step].includes(key))
+        stopVoice(key, stepTime, 'seq');
 
-    if (sequence.length>step) {
-      for (let i=0; i<sequence[step].length; i++) {
-        let key = sequence[step][i];
-        startVoice(key, stepTime);
+    for (let i=0; i<sequence[step].length; i++) {
+      startVoice(sequence[step][i], stepTime, 'seq');
+    }
+  }
+}
+
+function startVoice(key, time, source) {
+  if (key in keys) {
+    let freq = tuning.noteToFreq(keys[key]);
+    if (freq!=0) {
+      if (key in voices) voices[key].holds.add(source);
+      else {
+        let absFreq = Math.abs(freq);
+        let osc = audioContext.createOscillator();
+        let gain = audioContext.createGain();
+        osc.setPeriodicWave(waveform);
+        osc.frequency.value = freq;
+        gain.gain.value = 0;
+        gain.gain.setTargetAtTime(20/absFreq, time, 0.25/absFreq);
+        osc.connect(gain).connect(analyser);
+        osc.start(time);
+        voices[key] = {osc: osc, gain: gain, holds: new Set([source])};
       }
     }
   }
 }
 
-function startVoice(key, time) {
-  if (key in keys) {
-    let freq = tuning.noteToFreq(keys[key]);
-    if (freq!=0 && !isNaN(freq)) {
-      let absFreq = Math.abs(freq);
-      let osc = audioContext.createOscillator();
-      let gain = audioContext.createGain();
-      let fade = 0.25/absFreq
-      osc.setPeriodicWave(waveform);
-      osc.frequency.value = freq;
-      gain.gain.value = 0;
-      gain.gain.setTargetAtTime(20/absFreq, time, fade);
-      osc.connect(gain).connect(analyser);
-      osc.start(time);
-      if (key in voices) stopVoice(key, time);
-      voices[key] = {osc: osc, gain: gain, fade: fade};
+function stopVoice(key, time, source) {
+  if (key in voices) {
+    voices[key].holds.delete(source);
+    if (voices[key].holds.size==0) {
+      let fade = 0.25/voices[key].osc.frequency.value;
+      console.log(fade)
+      voices[key].gain.gain.setTargetAtTime(0, time, fade);
+      voices[key].osc.stop(time + 10*fade);
+      delete voices[key];
     }
   }
 }
 
-function stopVoice(key, time) {
-  if (key in voices) {
-    voices[key].gain.gain.setTargetAtTime(0, time, voices[key].fade);
-    voices[key].osc.stop(time + 10 * voices[key].fade);
-    delete voices[key];
-  }
-}
-
 function onkeydown(e) {
-  if (!(e.repeat || e.ctrlKey || e.metaKey)) {
-    pressedKeys.add(e.key);
-    startVoice(e.key, audioContext.currentTime);
-  }
+  if (kybdActive && !(e.repeat || e.ctrlKey || e.metaKey))
+    startVoice(e.key, audioContext.currentTime, 'kybd');
 }
 
 function onkeyup(e) {
-  pressedKeys.delete(e.key);
-  let time = audioContext.currentTime;
-  if (rate==0 || !sequence[getStepAtTime(time)].includes(e.key))
-    stopVoice(e.key, time);
+  if (kybdActive && !(e.ctrlKey || e.metaKey))
+  stopVoice(e.key, audioContext.currentTime, 'kybd');
 }
 
 function changedRate() {
   rate = parseExpr(document.getElementById('rate').innerHTML);
 
   if (rate==0) {
-    for (key in voices) stopVoice(key, audioContext.currentTime);
+    for (key in voices) stopVoice(key, audioContext.currentTime, 'seq');
     sequencer = clearInterval(sequencer);
     step = 0;
     stopped = true;
@@ -228,8 +231,12 @@ function changedSequence() {
   let elm = document.getElementById('sequence');
   sequence = htmlToString(elm.innerHTML).split(/\r?\n/);
   step = modulo(step, sequence.length);
-  for (key in voices) if (!sequence[step].includes(key)) stopVoice(key, audioContext.currentTime);
-  for (const key of sequence[step]) if (!(key in voices)) startVoice(key, audioContext.currentTime);
+  for (key in voices)
+    if (!sequence[step].includes(key))
+      stopVoice(key, audioContext.currentTime, 'seq');
+  for (const key of sequence[step])
+    if (!(key in voices))
+      startVoice(key, audioContext.currentTime, 'seq');
 }
 
 function changedKeymap() {
@@ -253,15 +260,14 @@ function changedTuningString() {
   baseFreq = Math.abs(parseExpr(baseFreqString));
 
   tuning = new Tuning(baseNoteString, baseFreqString, scaleString);
-  for (key in voices) startVoice(key, audioContext.currentTime);
 }
 
 function changedPartials() {
   let elm = document.getElementById("partials");
   let partials = htmlToString(elm.innerHTML).split(/\r?\n/).map(parseExpr).map(Math.round);
-  let spectrum = new Float32Array(1 + Math.max(...partials.map(Math.abs)));
-  for (partial of partials) if (partial!=0) spectrum[Math.abs(partial)] = 1/partial;
-  waveform = audioContext.createPeriodicWave(new Float32Array(spectrum.length), spectrum);
+  let spectrum = new Float32Array(Math.min(4096, 1 + Math.max(...partials.map(Math.abs))));
+  for (partial of partials) if (partial!=0 && Math.abs(partial)<4096) spectrum[Math.abs(partial)] = 1/partial;
+  waveform = audioContext.createPeriodicWave(new Float32Array(spectrum.length), spectrum, {disableNormalization: true});
   for (voice of Object.values(voices)) { voice.osc.setPeriodicWave(waveform); }
 }
 

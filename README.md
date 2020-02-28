@@ -1,9 +1,3 @@
-**Frequency Explorer** was built using these open-source code libraries:
-
-- [scalemap](https://github.com/maxwellpollack/scalemap) for **microtonal note-to-frequency mapping**
-- [TinyExpr](https://codeplea.com/tinyexpr) for **math expression parsing**
-- [Emscripten](https://emscripten.org/) for **compiling C &rarr; WebAssembly**
-
 ## Controls
 
 - ### `KEY MAP`
@@ -26,3 +20,9 @@
 
 - ### `PARTIALS`
   each line is a **math expression** for the integer frequency interval of a sine component in the oscillator waveform
+
+**Frequency Explorer** was built using these open-source code libraries:
+
+- [scalemap](https://github.com/maxwellpollack/scalemap) for **microtonal note-to-frequency mapping**
+- [TinyExpr](https://codeplea.com/tinyexpr) for **math expression parsing**
+- [Emscripten](https://emscripten.org/) for **compiling C &rarr; WebAssembly**
