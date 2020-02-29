@@ -99,6 +99,13 @@ function start() {
     document.addEventListener('keydown', onkeydown);
     document.addEventListener('keyup', onkeyup);
 
+    if(navigator.requestMIDIAccess) {
+      navigator.requestMIDIAccess({sysex: false}).then((midiAccess) => {
+        midiAccess.onstatechange = () => {populateIO(midiAccess)};
+        populateIO(midiAccess);
+      });
+    }
+
     changedTuningString();
     changedKeymap();
     changedPartials();
@@ -183,7 +190,7 @@ function startVoice(key, time, source) {
         osc.setPeriodicWave(waveform);
         osc.frequency.value = freq;
         gain.gain.value = 0;
-        gain.gain.setTargetAtTime(20/absFreq, time, 0.25/absFreq);
+        gain.gain.setTargetAtTime(10/absFreq, time, 0.25/absFreq);
         osc.connect(gain).connect(analyser);
         osc.start(time);
         voices[key] = {osc: osc, gain: gain, holds: new Set([source])};
