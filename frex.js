@@ -282,7 +282,7 @@ function changedTuningString() {
     if (newFreq!==0 && !isNaN(newFreq)) {
       let absFreq = Math.abs(newFreq);
       voices[key].osc.frequency.setValueAtTime(newFreq, time);
-      voices[key].gain.setTargetAtTime(10/absFreq,time,0.25/absFreq);
+      voices[key].gain.gain.setTargetAtTime(10/absFreq,time,0.25/absFreq);
       voices[key].startTime = time - phase/newFreq;
     }
   }
