@@ -99,12 +99,12 @@ function start() {
     document.addEventListener('keydown', onkeydown);
     document.addEventListener('keyup', onkeyup);
 
-    if(navigator.requestMIDIAccess) {
-      navigator.requestMIDIAccess({sysex: false}).then((midiAccess) => {
-        midiAccess.onstatechange = () => {populateIO(midiAccess)};
-        populateIO(midiAccess);
-      });
-    }
+    // if(navigator.requestMIDIAccess) {
+    //   navigator.requestMIDIAccess({sysex: false}).then((midiAccess) => {
+    //     midiAccess.onstatechange = () => {populateIO(midiAccess)};
+    //     populateIO(midiAccess);
+    //   });
+    // }
 
     changedTuningString();
     changedKeymap();
@@ -181,19 +181,23 @@ function stepSequence() {
 function startVoice(key, time, source) {
   if (key in keys) {
     let freq = tuning.noteToFreq(keys[key]);
-    if (freq!=0) {
+    if (freq!=0 && !isNaN(freq)) {
       if (key in voices) voices[key].holds.add(source);
       else {
         let absFreq = Math.abs(freq);
         let osc = audioContext.createOscillator();
         let gain = audioContext.createGain();
         osc.setPeriodicWave(waveform);
+        console.log(freq);
         osc.frequency.value = freq;
         gain.gain.value = 0;
         gain.gain.setTargetAtTime(10/absFreq, time, 0.25/absFreq);
         osc.connect(gain).connect(analyser);
         osc.start(time);
-        voices[key] = {osc: osc, gain: gain, holds: new Set([source])};
+        voices[key] = {osc: osc,
+                       gain: gain,
+                       holds: new Set([source]),
+                       startTime: time};
       }
     }
   }
@@ -204,7 +208,6 @@ function stopVoice(key, time, source) {
     voices[key].holds.delete(source);
     if (voices[key].holds.size==0) {
       let fade = 0.25/voices[key].osc.frequency.value;
-      console.log(fade)
       voices[key].gain.gain.setTargetAtTime(0, time, fade);
       voices[key].osc.stop(time + 10*fade);
       delete voices[key];
@@ -269,6 +272,18 @@ function changedTuningString() {
   baseFreq = Math.abs(parseExpr(baseFreqString));
 
   tuning = new Tuning(baseNoteString, baseFreqString, scaleString);
+
+  let time = audioContext.currentTime;
+
+  for (key in voices) {
+    let period = 1/voices[key].osc.frequency.value;
+    let phase = modulo(time-voices[key].startTime, period) / period;
+    let newFreq = tuning.noteToFreq(keys[key]);
+    if (newFreq!==0 && !isNaN(newFreq)) {
+      voices[key].osc.frequency.setValueAtTime(newFreq, time);
+      voices[key].startTime = time - phase/newFreq;
+    }
+  }
 }
 
 function changedPartials() {
@@ -277,7 +292,18 @@ function changedPartials() {
   let spectrum = new Float32Array(Math.min(4096, 1 + Math.max(...partials.map(Math.abs))));
   for (partial of partials) if (partial!=0 && Math.abs(partial)<4096) spectrum[Math.abs(partial)] = 1/partial;
   waveform = audioContext.createPeriodicWave(new Float32Array(spectrum.length), spectrum, {disableNormalization: true});
-  for (voice of Object.values(voices)) { voice.osc.setPeriodicWave(waveform); }
+  let time = audioContext.currentTime;
+  for (voice of Object.values(voices)) {
+    let period = 1/voice.osc.frequency.value;
+    let startTime = time - modulo(time-voice.startTime, period) + period;
+    voice.osc.stop(startTime);
+    let newOsc = audioContext.createOscillator();
+    newOsc.setPeriodicWave(waveform);
+    newOsc.frequency.value = voice.osc.frequency.value;
+    newOsc.connect(voice.gain);
+    newOsc.start(startTime);
+    voice.osc = newOsc;
+  }
 }
 
 function getLink() {
