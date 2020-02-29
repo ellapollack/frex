@@ -188,7 +188,6 @@ function startVoice(key, time, source) {
         let osc = audioContext.createOscillator();
         let gain = audioContext.createGain();
         osc.setPeriodicWave(waveform);
-        console.log(freq);
         osc.frequency.value = freq;
         gain.gain.value = 0;
         gain.gain.setTargetAtTime(10/absFreq, time, 0.25/absFreq);
