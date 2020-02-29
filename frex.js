@@ -280,7 +280,9 @@ function changedTuningString() {
     let phase = modulo(time-voices[key].startTime, period) / period;
     let newFreq = tuning.noteToFreq(keys[key]);
     if (newFreq!==0 && !isNaN(newFreq)) {
+      let absFreq = Math.abs(newFreq);
       voices[key].osc.frequency.setValueAtTime(newFreq, time);
+      voices[key].gain.setTargetAtTime(10/absFreq,time,0.25/absFreq);
       voices[key].startTime = time - phase/newFreq;
     }
   }
