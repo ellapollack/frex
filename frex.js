@@ -83,7 +83,12 @@ function start() {
     analyser = audioContext.createAnalyser();
     analyser.fftSize = 32768;
 
-    analyser.connect(audioContext.destination);
+    if (audioContext.audioWorklet)
+      audioContext.audioWorklet.addModule('white-noise-processor.js').then(()=>{
+        const tanhIIRNode = new AudioWorkletNode(audioContext, 'tanh-iir-processor');
+        analyser.connect(tanhIIRNode).connect(audioContext.destination);
+      });
+    else analyser.connect(audioContext.destination);
 
     if (analyser.getFloatTimeDomainData)
       oscilloscope = new Float32Array(analyser.fftSize);
