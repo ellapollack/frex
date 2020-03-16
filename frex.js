@@ -11,6 +11,7 @@ var kybdActive = true;
 var keys, rate, sequence, tuning, waveform;
 var baseFreq;
 
+var tanhIIRNode;
 var analyser;
 var oscilloscope;
 
@@ -85,7 +86,7 @@ function start() {
 
     if (audioContext.audioWorklet)
       audioContext.audioWorklet.addModule('./tanhiir.js').then(()=>{
-        const tanhIIRNode = new AudioWorkletNode(audioContext, 'tanh-iir-processor');
+        tanhIIRNode = new AudioWorkletNode(audioContext, 'tanh-iir-processor');
         tanhIIRNode.connect(analyser).connect(audioContext.destination);
       });
     else analyser.connect(audioContext.destination);
