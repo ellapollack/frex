@@ -5,7 +5,7 @@ class TanhIIRProcessor extends AudioWorkletProcessor {
     let offset = 0;
     outputs.forEach(channel => {
       for (let i = 0; i < channel.length; i++) {
-        channel[i] = tanh(inputs[0][i] + offset);
+        channel[i] = Math.tanh(inputs[0][i] + offset);
         offset = inputs[0][i] - channel[i];
       }
     });
