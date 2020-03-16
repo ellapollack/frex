@@ -86,7 +86,7 @@ function start() {
     if (audioContext.audioWorklet)
       audioContext.audioWorklet.addModule('./tanh-iir-processor.js').then(()=>{
         const tanhIIRNode = new AudioWorkletNode(audioContext, 'tanh-iir-processor');
-        analyser.connect(tanhIIRNode).connect(audioContext.destination);
+        tanhIIRNode.connect(analyser).connect(audioContext.destination);
       });
     else analyser.connect(audioContext.destination);
 
@@ -196,7 +196,7 @@ function startVoice(key, time, source) {
         osc.frequency.value = freq;
         gain.gain.value = 0;
         gain.gain.setTargetAtTime(10/absFreq, time, 0.25/absFreq);
-        osc.connect(gain).connect(analyser);
+        osc.connect(gain).connect(tanhIIRNode);
         osc.start(time);
         voices[key] = {osc: osc,
                        gain: gain,
