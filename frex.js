@@ -84,7 +84,7 @@ function start() {
     analyser.fftSize = 32768;
 
     if (audioContext.audioWorklet)
-      audioContext.audioWorklet.addModule('white-noise-processor.js').then(()=>{
+      audioContext.audioWorklet.addModule('./tanh-iir-processor.js').then(()=>{
         const tanhIIRNode = new AudioWorkletNode(audioContext, 'tanh-iir-processor');
         analyser.connect(tanhIIRNode).connect(audioContext.destination);
       });
