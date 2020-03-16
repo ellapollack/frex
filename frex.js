@@ -11,9 +11,10 @@ var kybdActive = true;
 var keys, rate, sequence, tuning, waveform;
 var baseFreq;
 
-var tanhIIRNode;
+var tanhIIRNode = null;
 var analyser;
 var oscilloscope;
+var output;
 
 var sequencer;
 var step=0;
@@ -88,8 +89,9 @@ function start() {
       audioContext.audioWorklet.addModule('./tanhiir.js').then(()=>{
         tanhIIRNode = new AudioWorkletNode(audioContext, 'tanh-iir-processor');
         tanhIIRNode.connect(analyser).connect(audioContext.destination);
+        output = tanhIIRNode;
       });
-    else analyser.connect(audioContext.destination);
+    else { analyser.connect(audioContext.destination); output = analyser; }
 
     if (analyser.getFloatTimeDomainData)
       oscilloscope = new Float32Array(analyser.fftSize);
@@ -198,8 +200,7 @@ function startVoice(key, time, source) {
         gain.gain.value = 0;
         gain.gain.setTargetAtTime(10/absFreq, time, 0.25/absFreq);
         osc.connect(gain);
-        if (tanhIIRNode) gain.connect(tanhIIRNode);
-        else gain.connect(analyser);
+        gain.connect(output);
         osc.start(time);
         voices[key] = {osc: osc,
                        gain: gain,
