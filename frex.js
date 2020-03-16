@@ -197,7 +197,9 @@ function startVoice(key, time, source) {
         osc.frequency.value = freq;
         gain.gain.value = 0;
         gain.gain.setTargetAtTime(10/absFreq, time, 0.25/absFreq);
-        osc.connect(gain).connect(tanhIIRNode);
+        osc.connect(gain);
+        if (tanhIIRNode) gain.connect(tanhIIRNode);
+        else gain.connect(analyser);
         osc.start(time);
         voices[key] = {osc: osc,
                        gain: gain,
