@@ -11,10 +11,8 @@ var kybdActive = true;
 var keys, rate, sequence, tuning, waveform;
 var baseFreq;
 
-var tanhIIRNode = null;
 var analyser;
 var oscilloscope;
-var output;
 
 var sequencer;
 var step=0;
@@ -84,14 +82,7 @@ function start() {
   if (audioContext.state=='running') {
     analyser = audioContext.createAnalyser();
     analyser.fftSize = 32768;
-
-    if (audioContext.audioWorklet)
-      audioContext.audioWorklet.addModule('./tanhiir.js').then(()=>{
-        tanhIIRNode = new AudioWorkletNode(audioContext, 'tanh-iir-processor');
-        tanhIIRNode.connect(analyser).connect(audioContext.destination);
-        output = tanhIIRNode;
-      });
-    else { analyser.connect(audioContext.destination); output = analyser; }
+    analyser.connect(audioContext.destination);
 
     if (analyser.getFloatTimeDomainData)
       oscilloscope = new Float32Array(analyser.fftSize);
@@ -198,9 +189,9 @@ function startVoice(key, time, source) {
         osc.setPeriodicWave(waveform);
         osc.frequency.value = freq;
         gain.gain.value = 0;
-        gain.gain.setTargetAtTime(20/absFreq, time, 0.25/absFreq);
+        gain.gain.setTargetAtTime(10/absFreq, time, 0.5/absFreq);
         osc.connect(gain);
-        gain.connect(output);
+        gain.connect(analyser);
         osc.start(time);
         voices[key] = {osc: osc,
                        gain: gain,
@@ -215,7 +206,7 @@ function stopVoice(key, time, source) {
   if (key in voices) {
     voices[key].holds.delete(source);
     if (voices[key].holds.size==0) {
-      let fade = 0.25/voices[key].osc.frequency.value;
+      let fade = 0.5/voices[key].osc.frequency.value;
       voices[key].gain.gain.setTargetAtTime(0, time, fade);
       voices[key].osc.stop(time + 10*fade);
       delete voices[key];
@@ -290,7 +281,7 @@ function changedTuningString() {
     if (newFreq!==0 && !isNaN(newFreq)) {
       let absFreq = Math.abs(newFreq);
       voices[key].osc.frequency.setValueAtTime(newFreq, time);
-      voices[key].gain.gain.setTargetAtTime(20/absFreq,time,0.25/absFreq);
+      voices[key].gain.gain.setTargetAtTime(10/absFreq,time,0.25/absFreq);
       voices[key].startTime = time - phase/newFreq;
     }
   }
