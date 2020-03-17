@@ -198,7 +198,7 @@ function startVoice(key, time, source) {
         osc.setPeriodicWave(waveform);
         osc.frequency.value = freq;
         gain.gain.value = 0;
-        gain.gain.setTargetAtTime(10/absFreq, time, 0.25/absFreq);
+        gain.gain.setTargetAtTime(20/absFreq, time, 0.25/absFreq);
         osc.connect(gain);
         gain.connect(output);
         osc.start(time);
@@ -290,7 +290,7 @@ function changedTuningString() {
     if (newFreq!==0 && !isNaN(newFreq)) {
       let absFreq = Math.abs(newFreq);
       voices[key].osc.frequency.setValueAtTime(newFreq, time);
-      voices[key].gain.gain.setTargetAtTime(10/absFreq,time,0.25/absFreq);
+      voices[key].gain.gain.setTargetAtTime(20/absFreq,time,0.25/absFreq);
       voices[key].startTime = time - phase/newFreq;
     }
   }
