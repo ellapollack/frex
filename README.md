@@ -23,7 +23,7 @@
 
 ---
 
-**Frequency Explorer** was built using these open-source code libraries:
+**Frequency Explorer** was built with these open-source libraries:
 
 - [scalemap](https://github.com/maxwellpollack/scalemap) for **microtonal note-to-frequency mapping**
 - [TinyExpr](https://codeplea.com/tinyexpr) for **math expression parsing**
