@@ -9,10 +9,10 @@
 - ### `SEQUENCE`
   each line is a string of **keys** which are played at the **step** equal to their line number
 
-- ### `BASE NOTE`
+- ### `ROOT NOTE`
   a [**math expression**](https://codeplea.com/tinyexpr) for the integer note number of the tonic
 
-- ### `BASE FREQ`
+- ### `ROOT FREQ`
   a [**math expression**](https://codeplea.com/tinyexpr) for the frequency of the tonic (cycles per second)
 
 - ### `SCALE`
