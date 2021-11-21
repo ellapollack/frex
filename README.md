@@ -18,7 +18,7 @@
 - ### `SCALE`
   each line is a [**math expression**](https://codeplea.com/tinyexpr) for the frequency interval of the `SCALE` **degree** equal to its line number. The last line is the octave interval.
 
-- ### `PARTIALS`
+- ### `HARMONICS`
   each line is a [**math expression**](https://codeplea.com/tinyexpr) for the integer frequency interval of a sine component in the oscillator waveform
 
 ---
