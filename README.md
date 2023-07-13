@@ -25,6 +25,6 @@
 
 **Frequency Explorer** was built with these open-source libraries:
 
-- [scalemap](https://github.com/maxwellpollack/scalemap) for **microtonal note-to-frequency mapping**
+- [scalemap](https://github.com/maxellp/scalemap) for **microtonal note-to-frequency mapping**
 - [TinyExpr](https://codeplea.com/tinyexpr) for **math expression parsing**
 - [Emscripten](https://emscripten.org/) for **compiling C &rarr; WebAssembly**
